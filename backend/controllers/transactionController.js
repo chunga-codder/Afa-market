@@ -1,6 +1,9 @@
 const Transaction = require("../models/Transaction");
 const Escrow = require("../models/Escrow");
 const User = require("../models/User");
+const { sendNotification } = require("./notificationController");
+const { sendSMS } = require("../utils/sendSMS");
+const { sendPushNotification } = require("../utils/sendPushNotification");
 
 // Record a transaction
 const createTransaction = async (userId, transactionType, amount, recipientId = null, escrowId = null, status = "completed") => {
@@ -134,6 +137,9 @@ exports.createEscrow = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Server error", error });
     }
+     await sendNotification(senderId, "transaction", "Your payment was successfully processed.");
+     await sendSMS(user.phone, "Your payment was processed successfully.");
+      await sendPushNotification(user.fcmToken, "Payment Successful", "Your payment was completed.");
 };
 
 // Complete Escrow (release funds)
@@ -173,3 +179,45 @@ exports.completeEscrow = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
+// Approve a transaction (Super Admin Control)
+exports.approveTransaction = async (req, res) => {
+    const { transactionId } = req.body;
+
+    try {
+        const transaction = await Transaction.findById(transactionId);
+        if (!transaction) return res.status(404).json({ message: "Transaction not found" });
+
+        // Approve the transaction
+        transaction.status = "completed";
+        await transaction.save();
+
+        res.status(200).json({
+            message: "Transaction approved successfully",
+            transaction,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+
+// Reject a transaction (Super Admin Control)
+exports.rejectTransaction = async (req, res) => {
+    const { transactionId } = req.body;
+
+    try {
+        const transaction = await Transaction.findById(transactionId);
+        if (!transaction) return res.status(404).json({ message: "Transaction not found" });
+
+        // Reject the transaction
+        transaction.status = "failed";
+        await transaction.save();
+
+        res.status(200).json({
+            message: "Transaction rejected successfully",
+            transaction,
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+

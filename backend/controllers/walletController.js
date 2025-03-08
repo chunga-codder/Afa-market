@@ -1,8 +1,8 @@
 const User = require("../models/User");
 const Flutterwave = require("flutterwave-node-v3"); // For Flutterwave integration
-
+require("dotenv").config();
 // Initialize Flutterwave
-const flutterwave = new Flutterwave("FLWSECK_TEST-b626e341c3e835bc70fa3158ca93dcdf-X");
+const flutterwave = new Flutterwave(process.env.FLUTTERWAVE_SECRET_KEY);
 
 // Deposit Funds
 exports.depositFunds = async (req, res) => {
