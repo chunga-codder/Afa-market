@@ -7,11 +7,15 @@ const morgan = require("morgan");
 const http = require("http");
 const socketIo = require("socket.io");
 const Escrow = require('./models/Escrow');
-const Flutterwave = require('flutterwave-node-v3');
 const authRoutes = require('./routes/authRoutes');
 const escrowRoutes = require('./routes/escrowRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require("./routes/userRoutes");
+const paymentRoutes = require('./routes/paymentRoutes'); // Import the payment routes
+const paymentRoutes = require('./routes/paymentRoutes'); // Import your payment routes
+
+
+// Now you can use rateTransaction in your routes
 
 const app = express();
 const server = http.createServer(app);
@@ -61,7 +65,9 @@ app.use('/api/escrow', escrowRoutes);
 app.use('/api/auth', authRoutes); // Routes for authentication (sign up, login)
 app.use('/api/chat', chatRoutes);
 app.use("/api/users", userRoutes); // Use the user routes
-
+app.use('/api', paymentRoutes); // Integrate payment-related routes (including webhook)
+app.use('/api/services', require('./routes/serviceRoutes'));
+// Use the transaction routes
 // Root Route
 app.get("/", (req, res) => {
     res.send("Marketplace API is running...");
@@ -70,3 +76,34 @@ app.get("/", (req, res) => {
 // Server Listen
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// ======= SOCKET.IO (Real-Time Chat) ======= //
+const activeUsers = new Map();
+
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  // User joins the chat
+  socket.on('join', (userId) => {
+    if (userId) {
+      socket.userId = userId;
+      activeUsers.set(userId, socket.id);
+      io.emit('userStatus', Array.from(activeUsers.keys()));
+    }
+  });
+
+  // Handle direct messaging
+  socket.on('sendMessage', ({ senderId, recipientId, content }) => {
+    const recipientSocketId = activeUsers.get(recipientId);
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('chatMessage', { senderId, content });
+    }
+  });
+
+  // Handle user disconnect
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.id}`);
+    activeUsers.delete(socket.userId);
+    io.emit('userStatus', Array.from(activeUsers.keys())); // Update online users
+  });
+});

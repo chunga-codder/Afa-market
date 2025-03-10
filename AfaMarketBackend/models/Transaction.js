@@ -17,7 +17,7 @@ const transactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'cancelled'], // Transaction status
+    enum: ['pending', 'completed', 'failed', 'frozen','cancelled'], // Transaction status
     default: 'pending',
   },
   transactionReference: {
@@ -46,6 +46,9 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     default: '', // Optional description for the transaction
   },
+  rating: { type: Number, min: 1, max: 5, default: 0 }, // Rating for the service provider (1-5)
+    // Add other fields as necessary, such as transaction dates or payment methods
+  
   createdAt: {
     type: Date,
     default: Date.now, // Transaction creation date

@@ -13,7 +13,14 @@ const messageSchema = new mongoose.Schema({
 // Define chat schema
 const chatSchema = new mongoose.Schema({
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Users involved in the chat
-  messages: [messageSchema], // Array of messages in the chat
+  messages: [
+    {
+      sender: { type: String, enum: ['User', 'Admin'], required: true },
+      message: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now }
+    }
+  ], // Array of messages
+  // in the chat
   lastUpdated: { type: Date, default: Date.now }, // Last updated timestamp
 });
 

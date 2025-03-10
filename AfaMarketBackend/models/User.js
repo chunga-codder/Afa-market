@@ -8,6 +8,7 @@ const newTransaction = new Transaction({
 
 // Define the User Schema
 const UserSchema = new mongoose.Schema(
+    
     {
         fullName: { type: String, required: true },
         email: { type: String, required: true, unique: true },
@@ -21,7 +22,7 @@ const UserSchema = new mongoose.Schema(
         isVerified: { type: Boolean, default: false },
         role: { type: String, enum: ["user", "admin", "agent"], default: "user" },
         walletBalance: { type: Number, default: 0 },
-        
+        isFrozen: { type: Boolean, default: false },
         kyc: {
             documentType: {
                 type: String,
@@ -37,6 +38,7 @@ const UserSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
 
 module.exports = mongoose.model("User", UserSchema);
 
