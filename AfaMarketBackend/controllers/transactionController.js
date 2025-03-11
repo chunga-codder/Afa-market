@@ -269,3 +269,51 @@ exports.rejectTransaction = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
+// Fetch transaction history for a user
+// Fetch transaction history for a user with detailed info
+exports.getTransactionHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;  // Assuming user ID is passed in the request body (or extracted from JWT)
+
+        // Get all transactions for this user (both as provider and consumer)
+        const transactions = await Transaction.find({
+            $or: [{ provider: userId }, { consumer: userId }] // Search for transactions where user is the provider or consumer
+        })
+        .populate('provider', 'name email')  // Populate provider info (name, email, etc.)
+        .populate('consumer', 'name email')  // Populate consumer info
+        .populate('recipientId', 'name email')  // Populate recipient info for transfer transactions
+        .populate('escrowId')  // Populate escrow details for escrow transactions
+        .sort({ createdAt: -1 });  // Sort by most recent transactions first
+
+        if (!transactions) {
+            return res.status(404).json({ message: "No transactions found" });
+        }
+
+        // Adding detailed info to each transaction
+        const transactionDetails = transactions.map(transaction => {
+            const transactionDetail = {
+                transactionId: transaction._id,
+                transactionType: transaction.transactionType,
+                amount: transaction.amount,
+                balanceAfterTransaction: transaction.balanceAfterTransaction,
+                status: transaction.status,
+                date: transaction.createdAt,
+            };
+
+            if (transaction.transactionType === 'escrow') {
+                transactionDetail.escrowDetails = transaction.escrowId;  // Include escrow details
+            }
+
+            if (transaction.transactionType === 'transfer') {
+                transactionDetail.recipient = transaction.recipientId;  // Include recipient for transfer
+            }
+
+            return transactionDetail;
+        });
+
+        res.status(200).json({ transactions: transactionDetails });
+    } catch (error) {
+        console.error("Error fetching transaction history:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

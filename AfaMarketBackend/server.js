@@ -13,6 +13,8 @@ const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require('./routes/paymentRoutes'); // Import the payment routes
 const paymentRoutes = require('./routes/paymentRoutes'); // Import your payment routes
+const earningsRoutes = require('./routes/earningsRoutes'); // Import Earnings Routes
+const analyticsRoutes = require('./routes/analyticsRoutes'); // Import Analytics Routes
 
 
 // Now you can use rateTransaction in your routes
@@ -67,6 +69,9 @@ app.use('/api/chat', chatRoutes);
 app.use("/api/users", userRoutes); // Use the user routes
 app.use('/api', paymentRoutes); // Integrate payment-related routes (including webhook)
 app.use('/api/services', require('./routes/serviceRoutes'));
+app.use('/api/earnings', earningsRoutes); // Earnings API
+app.use('/api/analytics', analyticsRoutes); // Analytics API
+
 // Use the transaction routes
 // Root Route
 app.get("/", (req, res) => {
