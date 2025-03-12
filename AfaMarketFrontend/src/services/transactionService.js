@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_URL = 'https://yourapi.com/api/transactions'; // Replace with your actual API URL
-
+// import {timeout} from './utils/timeout'
+const API_URL = 'https://localhost:5000/api/transactions'; // Replace with your actual API URL
 const getAuthToken = async () => {
   return await AsyncStorage.getItem('authToken');
 };
@@ -18,6 +17,7 @@ export const depositFunds = async (amount) => {
       },
       body: JSON.stringify({ amount }),
     });
+    // timeout(10000);
     return response.ok;
   } catch (error) {
     console.error('Deposit failed', error);
@@ -37,6 +37,7 @@ export const withdrawFunds = async (amount) => {
       },
       body: JSON.stringify({ amount }),
     });
+    // timeout(10000);
     return response.ok;
   } catch (error) {
     console.error('Withdraw failed', error);
@@ -56,6 +57,7 @@ export const transferFunds = async (receiverId, amount) => {
       },
       body: JSON.stringify({ receiverId, amount }),
     });
+    // timeout(10000);
     return response.ok;
   } catch (error) {
     console.error('Transfer failed', error);
@@ -75,6 +77,7 @@ export const createTransaction = async (amount, senderId, receiverId) => {
       },
       body: JSON.stringify({ amount, senderId, receiverId }),
     });
+    // timeout(10000);
     return response.ok;
   } catch (error) {
     console.error('Create Transaction failed', error);
@@ -94,6 +97,7 @@ export const rateTransaction = async (transactionId, rating) => {
       },
       body: JSON.stringify({ transactionId, rating }),
     });
+    // timeout(10000);
     return response.ok;
   } catch (error) {
     console.error('Rating failed', error);
@@ -112,6 +116,7 @@ export const getTransactionHistory = async () => {
           Authorization: `Bearer ${token}`,
         },
       });
+      // timeout(10000);
   
       const data = await response.json();
       if (response.ok) {

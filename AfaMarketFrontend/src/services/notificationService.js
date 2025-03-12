@@ -1,7 +1,9 @@
 // notificationService.js
 import { getAuthToken } from './authService'; // Assuming you have an authService to get the token
+import {timeout} from '../utils/timeout'
+const API_URL = 'localhost:5000/notifications';  // Replace with your actual backend URL
 
-const API_URL = 'YOUR_BACKEND_URL/notifications';  // Replace with your actual backend URL
+
 
 // Get notifications for a specific user
 export const getNotifications = async (userId) => {
@@ -14,6 +16,7 @@ export const getNotifications = async (userId) => {
         Authorization: `Bearer ${token}`,
       },
     });
+    timeout(10000);
     const data = await response.json();
     if (response.ok) {
       return data;
@@ -38,6 +41,7 @@ export const markAsRead = async (notificationId) => {
       },
       body: JSON.stringify({ notificationId }),
     });
+    timeout(10000);
     const data = await response.json();
     if (response.ok) {
       return data;

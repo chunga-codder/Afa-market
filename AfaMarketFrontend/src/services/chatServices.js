@@ -1,7 +1,7 @@
 import io from 'socket.io-client';
 import axios from 'axios';
 import { API_URL } from '../config/apiConfig';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const socket = io(API_URL, { transports: ['websocket'] });
 
 // Connect to chat
@@ -12,6 +12,8 @@ export const connectToChat = (userId) => {
 // Send a message (with optional file upload)
 export const sendMessage = async (conversationId, senderId, message, file = null) => {
   try {
+    const token = await AsyncStorage.getItem('authToken');
+
     const formData = new FormData();
     formData.append('conversationId', conversationId);
     formData.append('senderId', senderId);
@@ -26,7 +28,10 @@ export const sendMessage = async (conversationId, senderId, message, file = null
     }
 
     const response = await axios.post(`${API_URL}/chat`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+         'Content-Type': 'multipart/form-data',
+         'Authorization': `Bearer ${token}`
+         },
     });
 
     // Emit the message via socket
