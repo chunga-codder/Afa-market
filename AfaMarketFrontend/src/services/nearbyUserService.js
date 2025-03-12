@@ -1,6 +1,6 @@
 import { getAuthToken } from './authService'; // Assuming you have an authService
-import {timeout} from '../utils/timeout'
-const API_URL = 'YOUR_BACKEND_URL/nearby-users';  // Replace with your actual backend URL
+// import {timeout} from '../utils/timeout'
+const API_URL = 'https://localhost:5000/nearby-users';  // Replace with your actual backend URL
 
 // Search for nearby users
 export const searchNearbyUsers = async (latitude, longitude) => {
@@ -14,7 +14,7 @@ export const searchNearbyUsers = async (latitude, longitude) => {
       },
       body: JSON.stringify({ latitude, longitude }),
     });
-    timeout(10000)
+    // timeout(10000)
 
     const data = await response.json();
     if (response.ok) {

@@ -1,7 +1,7 @@
 // src/services/escrowService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = "https://yourapi.com/api/escrow";  // Update with actual API URL
+const API_URL = "https://localhost:5000/api/escrow";  // Update with actual API URL
 
 // Get authentication token
 const getAuthToken = async () => {
