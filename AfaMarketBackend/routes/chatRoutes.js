@@ -1,7 +1,7 @@
 const express = require("express");
 const { sendMessage, getChatHistory,markAsRead } = require("../controllers/chatController");
-const { protect } = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware");
+const { protect } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 
 const router = express.Router();
 

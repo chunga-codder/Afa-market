@@ -6,16 +6,25 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const http = require("http");
 const socketIo = require("socket.io");
+const crypto = require('crypto');
+
 const Escrow = require('./models/Escrow');
 const authRoutes = require('./routes/authRoutes');
 const escrowRoutes = require('./routes/escrowRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require("./routes/userRoutes");
-const paymentRoutes = require('./routes/paymentRoutes'); // Import the payment routes
 const paymentRoutes = require('./routes/paymentRoutes'); // Import your payment routes
 const earningsRoutes = require('./routes/earningsRoutes'); // Import Earnings Routes
 const analyticsRoutes = require('./routes/analyticsRoutes'); // Import Analytics Routes
+const disputeRoutes = require('./routes/disputeRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+const kycRoutes = require('./routes/kycRoutes');
 
+const secretKey = crypto.randomBytes(64).toString('hex');
+console.log(secretKey);
 
 // Now you can use rateTransaction in your routes
 
@@ -45,7 +54,6 @@ exports.sendRealTimeNotification = (userId, message) => {
     io.to(userId).emit("newNotification", message);
 };
 
-
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -54,25 +62,21 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 // Load Routes
-app.use("/api/users", require("./routes/userRoutes"));
-// app.use("/api/services", require("./routes/serviceRoutes"));
+app.use("/api/users", userRoutes);
 app.use("/api/transactions", require("./routes/transactionRoutes"));
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/kyc", require("./routes/kycRoutes"));
-app.use("/api/wallet", require("./routes/walletRoutes"));
-app.use("/api/disputes", require("./routes/disputeRoutes"));
-app.use("/api/superadmin", require("./routes/superAdminRoutes"));
-app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/auth", authRoutes);
+app.use("/api/kyc", kycRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/disputes", disputeRoutes);
+app.use("/api/superadmin", superAdminRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use('/api/escrow', escrowRoutes);
-app.use('/api/auth', authRoutes); // Routes for authentication (sign up, login)
 app.use('/api/chat', chatRoutes);
-app.use("/api/users", userRoutes); // Use the user routes
-app.use('/api', paymentRoutes); // Integrate payment-related routes (including webhook)
-app.use('/api/services', require('./routes/serviceRoutes'));
+app.use('/api/payment', paymentRoutes); // Integrate payment-related routes (including webhook)
+app.use('/api/services', serviceRoutes);
 app.use('/api/earnings', earningsRoutes); // Earnings API
 app.use('/api/analytics', analyticsRoutes); // Analytics API
 
-// Use the transaction routes
 // Root Route
 app.get("/", (req, res) => {
     res.send("Marketplace API is running...");

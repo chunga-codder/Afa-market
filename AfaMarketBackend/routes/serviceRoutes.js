@@ -1,15 +1,15 @@
 const express = require('express');
 const { getServiceCategories, createService, getServices, getServiceById, updateService, deleteService } = require('../controllers/serviceController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-router.get('/categories', getServiceCategories); // Get predefined service categories
-router.post('/create', protect, createService); // Create a new service
+// router.get('/categories', getServiceCategories); // Get predefined service categories
+router.post('/create', [protect], createService); // Create a new service
 router.get('/', getServices); // Get all active services
 router.get('/:id', getServiceById); // Get a specific service
-router.put('/:id', protect, updateService); // Update service (only provider)
-router.delete('/:id', protect, deleteService); // Delete service (only provider)
+router.put('/:id', [protect], updateService); // Update service (only provider)
+router.delete('/:id', [protect], deleteService); // Delete service (only provider)
 
 module.exports = router;
 

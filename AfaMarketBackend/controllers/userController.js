@@ -3,15 +3,27 @@ const bcrypt = require('bcryptjs');
 
 // Get User Profile
 const getUserProfile = async (req, res) => {
-  try {
-    const user = req.user; // Retrieved from the middleware
-    const { password, ...userProfile } = user.toObject(); // Remove password from the profile
-    res.json({ user: userProfile });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching profile' });
-  }
-};
+    try {
+      // Ensure that the user is available (from middleware, usually after authentication)
+      const user = req.user;
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Remove password and any sensitive information before returning user profile
+      const { password, ...userProfile } = user.toObject();
+      
+      // Return the cleaned-up user profile
+      return res.status(200).json({ user: userProfile });
+    } catch (error) {
+      // Enhanced error logging
+      console.error('Error fetching user profile:', error);
+  
+      // Return a more descriptive error message with status code 500
+      return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+  };
+  
 
 // Update User Profile
 const updateUserProfile = async (req, res) => {
@@ -82,10 +94,48 @@ const updateKYC = async (req, res) => {
     res.status(500).json({ message: 'Error updating KYC' });
   }
 };
+   const uploadProfilePhoto = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await User.findById(userId);
+      
+      if (!user) return res.status(404).json({ message: 'User not found' });
+  
+      // Update profile photo URL
+      user.profilePhoto = `/uploads/${req.file.filename}`;
+      await user.save();
+  
+      res.json({ message: 'Profile photo updated successfully', profilePhoto: user.profilePhoto });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+
+
 
 module.exports = {
-  getUserProfile,
-  updateUserProfile,
-  changePassword,
-  updateKYC,
-};
+    getUserProfile,
+    updateUserProfile,
+    changePassword,
+    updateKYC,
+    uploadProfilePhoto
+   // Ensure this is here
+  };
+
+//Update Profile Photo
+exports.uploadProfilePhoto = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await User.findById(userId);
+      
+      if (!user) return res.status(404).json({ message: 'User not found' });
+  
+      // Update profile photo URL
+      user.profilePhoto = `/uploads/${req.file.filename}`;
+      await user.save();
+  
+      res.json({ message: 'Profile photo updated successfully', profilePhoto: user.profilePhoto });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };

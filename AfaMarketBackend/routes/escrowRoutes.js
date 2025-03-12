@@ -1,42 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createEscrow,
-  releaseFunds,
-  createDispute,
-  resolveDispute,
-  getEscrows
-} = require('../controllers/escrowController');
+const escrowController = require('../controllers/escrowController'); // Import the controller
+const {protect} = require('../middlewares/authMiddleware'); // Import authentication middleware
+const {admin} = require('../middlewares/admin')
+// 🟢 Create a new escrow and transaction
+router.post('/create', [protect], escrowController.createEscrowTransaction);
 
-// 🟢 Create a new escrow transaction (Buyer makes payment)
-router.post('/create', createEscrow);
+// 🟢 Release Funds to Seller (Client or Admin triggers)
+router.post('/release/:escrowReference', [protect, admin], escrowController.releaseFunds);
 
-// 🟢 Release funds to seller (Admin or Client triggers)
-router.put('/release/:escrowId', async (req, res) => {
-  try {
-    const { escrowId } = req.params;
+// 🟢 Get all escrows (Admin Only)
+router.get('/all', [protect, admin], escrowController.getAllEscrows);
 
-    // Ensure a valid MongoDB ObjectId format
-    if (!escrowId.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ error: 'Invalid escrow ID' });
-    }
+// 🟢 Get a specific escrow by escrowReference
+router.get('/:escrowReference', [protect], escrowController.getEscrowByReference);
 
-    const result = await releaseFunds(escrowId);
-    res.json({ message: 'Funds released successfully', result });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// 🟢 Resolve dispute for an escrow (Admin intervention)
+router.post('/resolve-dispute', [protect, admin], escrowController.resolveDispute);
 
-// 🟢 Create a dispute (Buyer reports issue)
-router.post('/dispute', createDispute);
-
-// 🟢 Resolve a dispute (Admin decision)
-router.put('/dispute/resolve', resolveDispute);
-
-// 🟢 Get all escrow transactions (For Admin)
-router.get('/', getEscrows);
+// 🟢 Cancel an escrow (Admin or Authorized User)
+router.post('/cancel', [protect, admin], escrowController.cancelEscrow);
 
 module.exports = router;
-
-

@@ -25,6 +25,68 @@ exports.assignAdminToDispute = async (req, res) => {
     }
 };
 
+// Controller to delete a user account
+exports.deleteUserAccount = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Remove any related records (e.g., transactions, chats, disputes) if necessary
+        await Chat.deleteMany({ userId: userId });
+        await Transaction.deleteMany({ userId: userId });
+        await Dispute.deleteMany({ userId: userId });
+
+        await user.remove();
+
+        res.json({ success: true, message: 'User account has been deleted.' });
+    } catch (error) {
+        console.error('Error deleting user account:', error);
+        res.status(500).json({ success: false, message: 'Server error', error });
+    }
+};
+
+// Controller to list all users
+exports.listAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}).populate('profilePhoto');
+
+        if (!users) {
+            return res.status(404).json({ success: false, message: 'No users found.' });
+        }
+
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('Error retrieving users:', error);
+        res.status(500).json({ success: false, message: 'Server error', error });
+    }
+};
+
+// Controller to change user role
+exports.changeUserRole = async (req, res) => {
+    try {
+        const { userId, newRole } = req.body; // newRole can be 'admin', 'agent', etc.
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Update role
+        user.role = newRole;
+        await user.save();
+
+        res.json({ success: true, message: `User role has been changed to ${newRole}.` });
+    } catch (error) {
+        console.error('Error changing user role:', error);
+        res.status(500).json({ success: false, message: 'Server error', error });
+    }
+};
+
+
 // Controller to get activity logs for disputes
 exports.getActivityLogs = async (req, res) => {
     try {
@@ -122,7 +184,6 @@ exports.releaseFundsDuringDispute = async (req, res) => {
 };
 
 const User = require('../models/User');
-const Admin = require('../models/Admin');
 
 // Controller to add a user as an admin
 exports.addAdmin = async (req, res) => {

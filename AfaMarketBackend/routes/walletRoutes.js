@@ -1,15 +1,17 @@
 // ✅ Added API routes to deposit & withdraw funds
 
 // routes/walletRoutes.js
-const express = require('express');
+
+const { protect } = require("../middlewares/authMiddleware");const express = require('express');
 const router = express.Router();
 const { deposit, withdraw, transfer, releaseEscrow, raiseDispute, resolveDispute } = require('../controllers/walletController');
 
-router.post('/deposit', deposit);
-router.post('/withdraw', withdraw);
-router.post('/transfer', transfer);
-router.post('/release', releaseEscrow); // ✅ New
-router.post('/dispute', raiseDispute);  // ✅ New
-router.post('/resolve-dispute', resolveDispute);  // ✅ New
+router.get('/balance', protect, getWalletBalance);
+router.post('/deposit', protect, deposit);
+router.post('/withdraw', protect, withdraw);
+router.post('/transfer', protect, transfer);
+router.post('/release', protect, releaseEscrow); // ✅ New
+router.post('/dispute', protect, raiseDispute);  // ✅ New
+router.post('/resolve-dispute', protect, resolveDispute);  // ✅ New
 
 module.exports = router;

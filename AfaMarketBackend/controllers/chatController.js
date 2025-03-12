@@ -1,27 +1,21 @@
 const Chat = require('../models/Chat');
-const { sendNotification } = require('./notificationController');
 const User = require('../models/User');
+const { sendNotification } = require('./notificationController');
 
-// ✅ Chat Controller (Handles Sending & Receiving Messages)
-
-// Send a message
+// ✅ Send a message
 exports.sendMessage = async (req, res) => {
   try {
     const { receiverId, message } = req.body;
     let fileUrl = null;
     let fileType = null;
 
-    // Check if a file is uploaded (audio or document)
+    // Handle file uploads (audio/document)
     if (req.file) {
       fileUrl = req.file.path;
-      if (req.file.mimetype.startsWith("audio")) {
-        fileType = "audio";
-      } else {
-        fileType = "document";
-      }
+      fileType = req.file.mimetype.startsWith("audio") ? "audio" : "document";
     }
 
-    // Create or find the existing chat between sender and receiver
+    // Find or create chat
     let chat = await Chat.findOne({
       participants: { $all: [req.userId, receiverId] },
     });
@@ -30,29 +24,30 @@ exports.sendMessage = async (req, res) => {
       chat = new Chat({ participants: [req.userId, receiverId], messages: [] });
     }
 
-    // Create new message object
+    // Fetch sender details
+    const sender = await User.findById(req.userId).select('name profilePhoto');
+
+    // Create message object
     const newMessage = {
       sender: req.userId,
+      senderName: sender.name,
+      senderPhoto: sender.profilePhoto || null, // Include profile photo
       message,
       fileUrl,
       fileType,
-      read: false, // Default unread message
+      read: false,
+      timestamp: new Date(),
     };
 
-    // Add the new message to the chat
+    // Save message in chat
     chat.messages.push(newMessage);
     await chat.save();
 
     // Emit real-time message event (if using Socket.IO)
-    req.io.to(receiverId).emit('newMessage', {
-      senderId: req.userId,
-      message,
-      fileUrl,
-      fileType,
-    });
+    req.io.to(receiverId).emit('newMessage', newMessage);
 
-    // Send notification to the receiver
-    await sendNotification(receiverId, "chat", "You have a new message.");
+    // Send notification
+    await sendNotification(receiverId, "chat", `${sender.name} sent you a message.`);
 
     res.status(201).json({ message: "Message sent successfully", newMessage });
   } catch (error) {
@@ -61,14 +56,16 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// Get chat history
+// ✅ Get chat history
 exports.getChatHistory = async (req, res) => {
   try {
     const { userId, recipientId } = req.params;
 
     const chat = await Chat.findOne({
       participants: { $all: [userId, recipientId] },
-    }).populate('participants', 'fullName email phone'); // Populate participants instead of messages
+    })
+      .populate('messages.sender', 'name profilePhoto') // Get sender details
+      .lean();
 
     if (!chat) {
       return res.status(200).json({ messages: [] });
@@ -81,7 +78,7 @@ exports.getChatHistory = async (req, res) => {
   }
 };
 
-// Mark messages as read
+// ✅ Mark messages as read
 exports.markAsRead = async (req, res) => {
   try {
     const { chatId, userId } = req.body;
@@ -89,13 +86,14 @@ exports.markAsRead = async (req, res) => {
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ error: 'Chat not found' });
 
-    // Only update unread messages from the other user
-    await Chat.updateOne(
-      { _id: chatId, 'messages.sender': { $ne: userId }, 'messages.read': false },
-      { $set: { 'messages.$[elem].read': true } },
-      { arrayFilters: [{ 'elem.sender': { $ne: userId } }] }
-    );
+    // Mark only unread messages from the other user
+    chat.messages.forEach((msg) => {
+      if (msg.sender.toString() !== userId && !msg.read) {
+        msg.read = true;
+      }
+    });
 
+    await chat.save();
     res.status(200).json({ message: 'Messages marked as read' });
   } catch (error) {
     console.error('Error marking messages as read:', error);

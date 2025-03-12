@@ -6,7 +6,7 @@ const {
     createEscrow,
     completeEscrow,
 } = require("../controllers/transactionController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
@@ -16,5 +16,9 @@ router.post("/withdraw", protect, withdrawFunds);
 router.post("/transfer", protect, transferFunds);
 router.post("/escrow", protect, createEscrow);
 router.post("/escrow/complete", protect, completeEscrow);
+// Route to create a new transaction
+router.post('/create', protect, createTransaction);
+// Rate a service provider after the transaction
+router.post('/rate', protect, rateTransaction);
 
 module.exports = router;

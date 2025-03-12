@@ -1,16 +1,24 @@
-const express = require("express");
-const {
-    raiseDispute,
-    resolveDispute,
-    closeDispute,
-} = require("../controllers/disputeController");
-const { protect, admin } = require("../middleware/authMiddleware");
-
+const express = require('express');
 const router = express.Router();
+const disputeController = require('../controllers/disputeController');
+const {protect} = require('../middlewares/authMiddleware');
 
-// Protect routes with authentication middleware
-router.post("/raise", protect, raiseDispute);
-router.post("/resolve", [protect, admin], resolveDispute);
-router.post("/close", [protect, admin], closeDispute);
+// Raise a dispute
+router.post('/raise', [protect], disputeController.raiseDispute);
+
+// Create a dispute for a transaction
+router.post('/create', [protect], disputeController.createDispute);
+
+// Send a message in a dispute
+router.post('/message', [protect], disputeController.sendMessage);
+
+// Resolve a dispute (Admin only)
+router.post('/resolve', [protect], disputeController.resolveDispute);
+
+// Close a resolved dispute
+router.post('/close', [protect], disputeController.closeDispute);
+
+// Get all disputes
+router.get('/', [protect], disputeController.getDisputes);
 
 module.exports = router;
