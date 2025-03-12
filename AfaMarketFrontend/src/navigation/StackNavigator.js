@@ -24,8 +24,12 @@ import SearchNearbyScreen from "../screens/search/SearchNearbyScreen";
 import ServiceListScreen from "../screens/services/ServiceListScreen";
 import ServiceDetailsScreen from "../screens/services/ServiceDetailsScreen";
 
-// Profile
-import ProfileScreen, { UpdateProfileScreen, ChangePasswordScreen, KYCUpdateScreen } from "../screens/profile/ProfileScreen";
+// Profile & KYC
+import ProfileScreen, { UpdateProfileScreen, ChangePasswordScreen } from "../screens/profile/ProfileScreen";
+import KYCUpdateScreen from "../screens/kyc/KYCUpdateScreen";  // User uploads KYC
+import KYCStatusScreen from "../screens/kyc/KYCStatusScreen";  // User checks KYC status
+import AdminKYCApprovalScreen from "../screens/admin/AdminKYCApprovalScreen"; // Admin approves KYC
+import KYCVerificationScreen from "../screens/kyc/KYCVerificationScreen"; // User verification screen
 
 // Admin Screens
 import AdminDashboardScreen from "../screens/admin/AdminDashboardScreen";
@@ -34,12 +38,13 @@ import AdminDisputeScreen from "../screens/admin/AdminDisputeScreen";
 import AdminUserManagementScreen from "../screens/admin/AdminUserManagementScreen";
 import AdminActivityLogsScreen from "../screens/admin/AdminActivityLogsScreen";
 import AdminChatScreen from "../screens/admin/AdminChatScreen";
-import AdminUsersListScreen from '../screens/admin/AdminUsersListScreen';
+import AdminUsersListScreen from "../screens/admin/AdminUsersListScreen";
+
 const Stack = createStackNavigator();
 
 const StackNavigator = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // Track if user is admin
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -49,7 +54,6 @@ const StackNavigator = () => {
     const token = await AsyncStorage.getItem("authToken");
     setIsAuthenticated(!!token);
 
-    // Check if user has admin role
     const userRole = await AsyncStorage.getItem("userRole");
     setIsAdmin(userRole === "admin" || userRole === "superAdmin");
   };
@@ -77,7 +81,11 @@ const StackNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ title: "Edit Profile" }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: "Change Password" }} />
-          <Stack.Screen name="KYCUpdate" component={KYCUpdateScreen} options={{ title: "Update KYC" }} />
+
+          {/* KYC Screens */}
+          <Stack.Screen name="KYCUpdate" component={KYCUpdateScreen} options={{ title: "Submit KYC" }} />
+          <Stack.Screen name="KYCStatus" component={KYCStatusScreen} options={{ title: "KYC Status" }} />
+          <Stack.Screen name="KYCVerification" component={KYCVerificationScreen} options={{ title: "KYC Verification" }} />
 
           {/* Services Screens */}
           <Stack.Screen name="ServiceList" component={ServiceListScreen} />
@@ -93,11 +101,11 @@ const StackNavigator = () => {
               <Stack.Screen name="AdminActivityLogs" component={AdminActivityLogsScreen} />
               <Stack.Screen name="AdminUsersList" component={AdminUsersListScreen} />
               <Stack.Screen name="AdminChats" component={AdminChatScreen} />
+              <Stack.Screen name="AdminKYCApproval" component={AdminKYCApprovalScreen} options={{ title: "KYC Approval" }} />
             </>
           )}
         </>
       ) : (
-        // Auth Flow
         <Stack.Screen name="Auth" component={AuthNavigator} />
       )}
     </Stack.Navigator>

@@ -49,6 +49,7 @@ export const loginUser = async (email, password) => {
       // Save token to AsyncStorage
       await AsyncStorage.setItem('authToken', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
+      await AsyncStorage.setItem("kycStatus", data.kycStatus); // Store KYC status
 
       return { token, user };
     } catch (error) {
