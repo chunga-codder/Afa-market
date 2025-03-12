@@ -66,7 +66,8 @@ exports.loginUser = async (req, res) => {
           _id: user._id,
           fullName: user.fullName,
           email: user.email,
-          role: user.role, 
+          role: user.role,
+          kycStatus: user.kyc.verified ? "verified" : "pending", 
         },
       });
     } catch (error) {
