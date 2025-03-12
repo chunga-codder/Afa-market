@@ -1,17 +1,14 @@
-// ✅ What’s Fixed & Improved?
-// ✔ Flutterwave MoMo Integration (For Deposits & Withdrawals)
-// ✔ Transaction References (Tracking with Flutterwave)
-// ✔ Error Handling (Ensures data consistency)
-// ✔ In-App Transfers (Users can send money to each other)
-// ✔ Balance Checks (Prevents overdraft errors)
-
-
-const Wallet = require('../models/Wallet');
-const User = require('../models/User'); // Ensure you have user data for transfers
-const Flutterwave = require('flutterwave-node-v3');
 const dotenv = require('dotenv');
-const Notification = require('../models/Notification');  // Ensure you have this import
+require('dotenv').config();
+const Flutterwave = require('flutterwave-node-v3');
+const Wallet = require('../models/Wallet');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const Transaction = require('../models/Transaction'); // Ensure this import exists
 
+const flutterwave = new Flutterwave(process.env.FLUTTERWAVE_PUBLIC_KEY, process.env.FLUTTERWAVE_SECRET_KEY);
+
+// Create notification function
 const createNotification = async (userId, message, type, phoneNumber, email) => {
     try {
         // Save notification to the database
@@ -33,17 +30,10 @@ const createNotification = async (userId, message, type, phoneNumber, email) => 
     }
 };
 
-
-
-dotenv.config();
-
-// Initialize Flutterwave
-const flutterwave = new Flutterwave(process.env.FLUTTERWAVE_SECRET_KEY);
-
 // 🟢 Deposit Funds via Mobile Money
 exports.deposit = async (req, res) => {
     try {
-        const { userId, amount, mobileMoneyNumber, provider } = req.body; // provider: "mtn" or "orange"
+        const { userId, amount, mobileMoneyNumber, provider } = req.body;
 
         if (!userId || !amount || !mobileMoneyNumber || !provider) {
             return res.status(400).json({ error: 'All fields are required' });
@@ -82,6 +72,19 @@ exports.deposit = async (req, res) => {
         });
 
         await wallet.save();
+
+        // Create a transaction record
+        const newTransaction = new Transaction({
+            userId,
+            transactionType: 'deposit',
+            amount,
+            status: 'pending',
+            transactionReference: paymentResponse.tx_ref,
+            paymentMethod: 'flutterwave',
+        });
+
+        await newTransaction.save();
+
         // Send notification to user
         const user = await User.findById(userId);
         createNotification(userId, `Your deposit of ${amount} XAF was successful.`, 'transaction', user.phoneNumber, user.email);
@@ -90,23 +93,7 @@ exports.deposit = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-    
-    
-     // Create a new transaction record
-     const newTransaction = new Transaction({
-        userId,
-        transactionType: 'deposit',
-        amount,
-        status: 'pending',  // You can update this status after verification
-        transactionReference: paymentReference,
-        paymentMethod: 'flutterwave',
-        paymentReference: paymentResponse.tx_ref,  // Store the Flutterwave reference
-      });
-
-      // Save the transaction
-    await newTransaction.save();
 };
-
 
 // 🟢 Withdraw Funds to Mobile Money
 exports.withdraw = async (req, res) => {
@@ -148,47 +135,68 @@ exports.withdraw = async (req, res) => {
         });
 
         await wallet.save();
+
         // Send notification to user
         const user = await User.findById(userId);
-        createNotification(userId, `Your deposit of ${amount} XAF was successful.`, 'transaction', user.phoneNumber, user.email);
+        createNotification(userId, `Your withdrawal of ${amount} XAF was successful.`, 'transaction', user.phoneNumber, user.email);
+
         res.json({ message: 'Withdrawal successful', wallet });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// 🟢 Transfer Funds Between Users (In-App)
-// Transfer Funds with Escrow System
-
+// 🟢 Transfer Funds Between Users (In-App) with Escrow
 exports.transfer = async (req, res) => {
     try {
-        const { senderId, recipientId, amount } = req.body;
+        const { senderId, recipientIdentifier, amount } = req.body;
 
-        if (!senderId || !recipientId || !amount) {
+        if (!senderId || !recipientIdentifier || !amount) {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
+        // Find the recipient by username, phone number, or userId
+        let recipient;
+        if (recipientIdentifier.includes('@')) {
+            recipient = await User.findOne({ email: recipientIdentifier });
+        } else if (!isNaN(recipientIdentifier)) {
+            recipient = await User.findOne({ phoneNumber: recipientIdentifier });
+        } else {
+            recipient = await User.findOne({ username: recipientIdentifier });
+        }
+
+        if (!recipient) {
+            return res.status(400).json({ error: 'Recipient not found' });
+        }
+
+        const recipientId = recipient._id; // Extract user ID
         let senderWallet = await Wallet.findOne({ userId: senderId });
 
         if (!senderWallet || senderWallet.balance < amount) {
             return res.status(400).json({ error: 'Insufficient balance' });
         }
 
-        const transactionReference = `escrow-${Date.now()}-${senderId}`;
+        const transactionReference = `transfer-${Date.now()}-${senderId}`;
 
-        // Deduct the amount from the sender's balance and hold in escrow
+        // Deduct amount from sender's wallet and hold it in escrow
         senderWallet.balance -= amount;
         senderWallet.transactions.push({
             type: 'transfer',
             amount,
             recipientId,
             transactionReference,
-            status: 'escrow', // Funds are held in escrow
+            status: 'escrow', // Funds are now held in escrow
         });
 
         await senderWallet.save();
 
-        res.json({ message: 'Transfer initiated and funds held in escrow', transactionReference });
+        // Send notification to both sender and recipient
+        const sender = await User.findById(senderId);
+        createNotification(senderId, `You sent ${amount} XAF to ${recipient.username || recipient.phoneNumber}, but the funds are held in escrow.`, 'transaction', sender.phoneNumber, sender.email);
+
+        createNotification(recipientId, `You have a pending transfer of ${amount} XAF from ${sender.username || sender.phoneNumber}. Funds are in escrow.`, 'transaction', recipient.phoneNumber, recipient.email);
+
+        res.json({ message: 'Transfer initiated and funds are held in escrow', transactionReference });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -197,26 +205,41 @@ exports.transfer = async (req, res) => {
 // Release Escrow Funds to Recipient
 exports.releaseEscrow = async (req, res) => {
     try {
-        const { senderId, recipientId, transactionReference } = req.body;
+        const { senderId, transactionReference } = req.body;
 
-        if (!senderId || !recipientId || !transactionReference) {
-            return res.status(400).json({ error: 'All fields are required' });
+        if (!senderId || !transactionReference) {
+            return res.status(400).json({ error: 'Sender ID and transaction reference are required' });
         }
 
         let senderWallet = await Wallet.findOne({ userId: senderId });
-        let recipientWallet = await Wallet.findOne({ userId: recipientId });
-
-        if (!senderWallet || !recipientWallet) {
-            return res.status(400).json({ error: 'Wallet not found' });
+        if (!senderWallet) {
+            return res.status(400).json({ error: 'Sender wallet not found' });
         }
 
         // Find the escrow transaction
         let transaction = senderWallet.transactions.find(
-            (t) => t.transactionReference === transactionReference && t.status === 'escrow'
+            (t) => t.transactionReference === transactionReference
         );
 
         if (!transaction) {
-            return res.status(400).json({ error: 'Escrow transaction not found or already released' });
+            return res.status(400).json({ error: 'Transaction not found' });
+        }
+
+        // Ensure the transaction is NOT disputed before proceeding
+        if (transaction.status === 'disputed') {
+            return res.status(400).json({ error: 'Transaction is disputed and cannot be released' });
+        }
+
+        // Ensure the transaction is still in escrow
+        if (transaction.status !== 'escrow') {
+            return res.status(400).json({ error: 'Transaction already released or invalid status' });
+        }
+
+        const recipientId = transaction.recipientId;
+
+        let recipientWallet = await Wallet.findOne({ userId: recipientId });
+        if (!recipientWallet) {
+            return res.status(400).json({ error: 'Recipient wallet not found' });
         }
 
         // Transfer funds to recipient
@@ -229,19 +252,32 @@ exports.releaseEscrow = async (req, res) => {
             status: 'completed',
         });
 
-        // Update sender transaction status
+        // Update sender's transaction status
         transaction.status = 'completed';
 
         await senderWallet.save();
         await recipientWallet.save();
+
+        // Notify recipient
         const recipient = await User.findById(recipientId);
-        createNotification(recipientId, `You have received ${transaction.amount} XAF from the escrow transaction.`, 'transaction', recipient.phoneNumber, recipient.email);
+        if (recipient) {
+            createNotification(
+                recipientId,
+                `You have received ${transaction.amount} XAF from the escrow transaction.`,
+                'transaction',
+                recipient.phoneNumber,
+                recipient.email
+            );
+        }
 
         res.json({ message: 'Funds released successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
+
+
 
 // Raise a Dispute for an Escrow Transaction
 exports.raiseDispute = async (req, res) => {

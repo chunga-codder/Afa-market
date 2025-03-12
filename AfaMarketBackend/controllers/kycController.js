@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
-const KYCService = require('some-kyc-service'); // Example for third-party KYC API (e.g., Jumio, Onfido, etc.)
+// const KYCService = require('some-kyc-service'); // Example for third-party KYC API (e.g., Jumio, Onfido, etc.)
 
 // Multer Setup for File Upload
 const storage = multer.diskStorage({

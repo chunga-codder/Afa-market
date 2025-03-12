@@ -1,16 +1,30 @@
 const { serviceCategories } = require('../models/Service');
+const User = require('../models/User');
+const Service = require('../models/Service');
 
 // 🟢 Create a New Service
 exports.createService = async (req, res) => {
   try {
-    const { title, description, price, category, location, hasTransportVehicle, agent } = req.body;
-
-    if (category === 'House Moving and Transfer Assistant' || category === 'Transportation') {
-      if (hasTransportVehicle === undefined) {
-        return res.status(400).json({ success: false, message: 'Please specify if you have a transport vehicle.' });
-      }
+    // Get user from database
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'User not found' });
     }
 
+    // Destructure the data from the request
+    const { title, description, price, category, location, hasTransportVehicle, agent } = req.body;
+
+    // Check if the selected location matches the user's location
+    if (user.location !== location) {
+      return res.status(400).json({ success: false, message: 'You can only select your own location for services.' });
+    }
+
+    // Check if House Moving or Transportation is selected, ensure transport vehicle info is provided
+    if (['House Moving and Transfer Assistant', 'Transportation'].includes(category) && hasTransportVehicle === undefined) {
+      return res.status(400).json({ success: false, message: 'Please specify if you have a transport vehicle.' });
+    }
+
+     //Create the new service
     const service = new Service({
       title,
       description,
@@ -21,10 +35,11 @@ exports.createService = async (req, res) => {
       hasTransportVehicle: hasTransportVehicle || false,
       agent: agent || null
     });
+
     await service.save();
     res.status(201).json({ success: true, service });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Service creation failed', error });
+    res.status(500).json({ success: false, message: 'Service creation failed', error: error.message });
   }
 };
 
@@ -34,7 +49,7 @@ exports.getServices = async (req, res) => {
     const services = await Service.find({ isActive: true }).populate('provider agent', 'name email');
     res.status(200).json({ success: true, services });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch services', error });
+    res.status(500).json({ success: false, message: 'Failed to fetch services', error: error.message });
   }
 };
 
@@ -43,9 +58,10 @@ exports.getServiceById = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id).populate('provider agent', 'name email');
     if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
+
     res.status(200).json({ success: true, service });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching service', error });
+    res.status(500).json({ success: false, message: 'Error fetching service', error: error.message });
   }
 };
 
@@ -71,7 +87,7 @@ exports.updateService = async (req, res) => {
     await service.save();
     res.status(200).json({ success: true, service });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Update failed', error });
+    res.status(500).json({ success: false, message: 'Update failed', error: error.message });
   }
 };
 
@@ -83,9 +99,9 @@ exports.deleteService = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to delete' });
     }
 
-    await service.remove();
+    await Service.deleteOne({ _id: req.params.id });
     res.status(200).json({ success: true, message: 'Service deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete service', error });
+    res.status(500).json({ success: false, message: 'Failed to delete service', error: error.message });
   }
 };

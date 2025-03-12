@@ -1,24 +1,55 @@
-const express = require("express");
+const express = require('express');
+const router = express.Router();
+const { protect, authorizeAdmin } = require('../middlewares/authMiddleware'); // Assuming protect is middleware for authentication
 const {
+    createTransaction,
+    rateTransaction,
     depositFunds,
     withdrawFunds,
     transferFunds,
     createEscrow,
     completeEscrow,
-} = require("../controllers/transactionController");
-const { protect } = require("../middlewares/authMiddleware");
+    approveTransaction,
+    rejectTransaction,
+    getTransactionHistory
+} = require('../controllers/transactionController');
 
-const router = express.Router();
+// Create a transaction
+router.post('/create', protect, async (req, res) => {
+    const { userId, transactionType, amount, recipientId, escrowId, status } = req.body;
+    try {
+        const transaction = await createTransaction(userId, transactionType, amount, recipientId, escrowId, status);
+        res.status(200).json(transaction);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating transaction', error });
+    }
+});
 
-// Protect routes with authentication middleware
-router.post("/deposit", protect, depositFunds);
-router.post("/withdraw", protect, withdrawFunds);
-router.post("/transfer", protect, transferFunds);
-router.post("/escrow", protect, createEscrow);
-router.post("/escrow/complete", protect, completeEscrow);
-// Route to create a new transaction
-router.post('/create', protect, createTransaction);
-// Rate a service provider after the transaction
-router.post('/rate', protect, rateTransaction);
+// Rate a service provider
+router.post('/rate', [protect], rateTransaction);
+
+// Deposit funds
+router.post('/deposit', [protect], depositFunds);
+
+// Withdraw funds
+router.post('/withdraw', [protect], withdrawFunds);
+
+// Transfer funds
+router.post('/transfer', [protect], transferFunds);
+
+// Create an escrow
+router.post('/escrow', [protect], createEscrow);
+
+// Complete an escrow (release funds)
+router.post('/complete-escrow', [protect], completeEscrow);
+
+// Approve a transaction (Super Admin Control)
+router.post('/approve', [protect, authorizeAdmin], approveTransaction);
+
+// Reject a transaction (Super Admin Control)
+router.post('/reject', [protect, authorizeAdmin], rejectTransaction);
+
+// Get transaction history for a user
+router.get('/history', [protect], getTransactionHistory);
 
 module.exports = router;

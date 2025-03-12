@@ -21,10 +21,16 @@ const superAdminRoutes = require('./routes/superAdminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const nearbyUserRoutes = require('./routes/nearbyUsers'); // Import your new nearby user route
 const kycRoutes = require('./routes/kycRoutes');
+const fs = require('fs')
 
-const secretKey = crypto.randomBytes(64).toString('hex');
-console.log(secretKey);
+// Step 1: Generate a secure random JWT secret key
+const secretKey = crypto.randomBytes(64).toString('hex');  // This is the JWT secret key you will encrypt
+
+fs.appendFileSync('.env', `\nJWT_SECRET=${secretKey}\n`, { flag: 'a' });
+
+
 
 // Now you can use rateTransaction in your routes
 
@@ -76,6 +82,7 @@ app.use('/api/payment', paymentRoutes); // Integrate payment-related routes (inc
 app.use('/api/services', serviceRoutes);
 app.use('/api/earnings', earningsRoutes); // Earnings API
 app.use('/api/analytics', analyticsRoutes); // Analytics API
+app.use('/api/nearby-users', nearbyUserRoutes); // Register the new route for nearby users
 
 // Root Route
 app.get("/", (req, res) => {

@@ -26,7 +26,7 @@ const createTransaction = async (userId, transactionType, amount, recipientId = 
 };
 
 // Rate a service provider after completing a transaction
-export async function rateTransaction(req, res) {
+async function rateTransaction(req, res) {
     const { transactionId, rating } = req.body;
 
     if (rating < 1 || rating > 5) {
@@ -65,7 +65,7 @@ export async function rateTransaction(req, res) {
 }
 
 // Deposit Funds (record as deposit)
-exports.depositFunds = async (req, res) => {
+const depositFunds = async (req, res) => {
     const { amount } = req.body;
 
     try {
@@ -90,7 +90,7 @@ exports.depositFunds = async (req, res) => {
 };
 
 // Withdraw Funds (record as withdrawal)
-exports.withdrawFunds = async (req, res) => {
+const withdrawFunds = async (req, res) => {
     const { amount } = req.body;
 
     try {
@@ -117,7 +117,7 @@ exports.withdrawFunds = async (req, res) => {
 };
 
 // Transfer Funds (record as transfer)
-exports.transferFunds = async (req, res) => {
+const transferFunds = async (req, res) => {
     const { recipientId, amount } = req.body;
 
     try {
@@ -149,7 +149,7 @@ exports.transferFunds = async (req, res) => {
 };
 
 // Create Escrow (place funds in escrow)
-exports.createEscrow = async (req, res) => {
+const createEscrow = async (req, res) => {
     const { jobId, amount, recipientId } = req.body;
 
     try {
@@ -191,7 +191,7 @@ exports.createEscrow = async (req, res) => {
 };
 
 // Complete Escrow (release funds)
-exports.completeEscrow = async (req, res) => {
+const completeEscrow = async (req, res) => {
     const { escrowId } = req.body;
 
     try {
@@ -229,7 +229,7 @@ exports.completeEscrow = async (req, res) => {
 };
 
 // Approve a transaction (Super Admin Control)
-exports.approveTransaction = async (req, res) => {
+const approveTransaction = async (req, res) => {
     const { transactionId } = req.body;
 
     try {
@@ -250,7 +250,7 @@ exports.approveTransaction = async (req, res) => {
 };
 
 // Reject a transaction (Super Admin Control)
-exports.rejectTransaction = async (req, res) => {
+const rejectTransaction = async (req, res) => {
     const { transactionId } = req.body;
 
     try {
@@ -269,9 +269,9 @@ exports.rejectTransaction = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
+
 // Fetch transaction history for a user
-// Fetch transaction history for a user with detailed info
-exports.getTransactionHistory = async (req, res) => {
+const getTransactionHistory = async (req, res) => {
     try {
         const userId = req.user.id;  // Assuming user ID is passed in the request body (or extracted from JWT)
 
@@ -317,3 +317,16 @@ exports.getTransactionHistory = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+ module.exports = {
+    createTransaction,
+        rateTransaction,
+        depositFunds,
+        withdrawFunds,
+        transferFunds,
+        createEscrow,
+        completeEscrow,
+        approveTransaction,
+        rejectTransaction,
+        getTransactionHistory
+
+ }

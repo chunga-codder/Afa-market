@@ -4,7 +4,7 @@ const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// router.get('/categories', getServiceCategories); // Get predefined service categories
+//  router.get('/categories', getServiceCategories); // Get predefined service categories
 router.post('/create', [protect], createService); // Create a new service
 router.get('/', getServices); // Get all active services
 router.get('/:id', getServiceById); // Get a specific service
