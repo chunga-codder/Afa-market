@@ -22,6 +22,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const nearbyUserRoutes = require('./routes/nearbyUsers'); // Import your new nearby user route
+const bookingRoutes = require('./routes/bookingRoutes');
 const kycRoutes = require('./routes/kycRoutes');
 const fs = require('fs')
 
@@ -83,11 +84,11 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/earnings', earningsRoutes); // Earnings API
 app.use('/api/analytics', analyticsRoutes); // Analytics API
 app.use('/api/nearby-users', nearbyUserRoutes); // Register the new route for nearby users
-
+app.use('/api/bookings', bookingRoutes)
 // Root Route
-app.get("/", (req, res) => {
+ app.get("/", (req, res) => {
     res.send("Marketplace API is running...");
-});
+ });
 
 // Server Listen
 const PORT = process.env.PORT || 5000;
