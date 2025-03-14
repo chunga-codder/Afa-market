@@ -2,7 +2,7 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { getUserProfile,uploadProfilePhoto, updateUserProfile, changePassword, updateKYC } = require('../controllers/userController');
+const { updateLastVisited ,updateEarnings, getUserDetails, getUserProfile,uploadProfilePhoto, updateUserProfile, changePassword, updateKYC } = require('../controllers/userController');
 
 const {protect} = require('../middlewares/authMiddleware');
 
@@ -19,6 +19,15 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+// Route to update last visit and check activity
+router.post('/update-visit',[protect], updateLastVisited);
+
+// Route to update user earnings (e.g., after a completed service or referral)
+router.post('/update-earnings',[protect], updateEarnings);
+
+// Route to get user details including weekly earnings
+router.get('/:userId', [protect], getUserDetails);
 
 // Routes i should check the get route soon.
  router.get('/profile', [protect], getUserProfile); // Ensure this points to the correct controller function

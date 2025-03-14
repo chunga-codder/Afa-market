@@ -11,6 +11,7 @@ const serviceCategories = [
   'Plumbing Services',
   'Electrical Services',
   'Capentry Services',
+  'Pick-up Services'
   
 ];
 

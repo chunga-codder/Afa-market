@@ -39,6 +39,8 @@ import AdminUserManagementScreen from "../screens/admin/AdminUserManagementScree
 import AdminActivityLogsScreen from "../screens/admin/AdminActivityLogsScreen";
 import AdminChatScreen from "../screens/admin/AdminChatScreen";
 import AdminUsersListScreen from "../screens/admin/AdminUsersListScreen";
+import BookingScreen from '../screens/BookingScreen';
+import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 
 const Stack = createStackNavigator();
 
@@ -81,7 +83,8 @@ const StackNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} options={{ title: "Edit Profile" }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: "Change Password" }} />
-
+          <Stack.Screen name="Booking" component={BookingScreen} />
+          <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
           {/* KYC Screens */}
           <Stack.Screen name="KYCUpdate" component={KYCUpdateScreen} options={{ title: "Submit KYC" }} />
           <Stack.Screen name="KYCStatus" component={KYCStatusScreen} options={{ title: "KYC Status" }} />

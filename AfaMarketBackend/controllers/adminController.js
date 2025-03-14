@@ -162,7 +162,7 @@ exports.releaseFundsDuringDispute = async (req, res) => {
             await transaction.save();
 
             // Optionally: Notify the involved parties about the fund release
-            // sendPushNotification(transaction.userId, 'Funds released', 'Your funds have been released due to dispute resolution.');
+             sendPushNotification(transaction.userId, 'Funds released', 'Your funds have been released due to dispute resolution.');
 
             res.json({ success: true, message: 'Funds have been successfully released.' });
         } else if (decision === 'reject') {
@@ -171,7 +171,7 @@ exports.releaseFundsDuringDispute = async (req, res) => {
             await transaction.save();
 
             // Optionally: Notify the involved parties about the rejection
-            // sendPushNotification(transaction.userId, 'Funds frozen', 'Your funds have been frozen due to dispute resolution.');
+             sendPushNotification(transaction.userId, 'Funds frozen', 'Your funds have been frozen due to dispute resolution.');
 
             res.json({ success: true, message: 'Funds have been frozen due to the dispute resolution.' });
         } else {

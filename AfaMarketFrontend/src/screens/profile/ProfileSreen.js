@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Button, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = ({ navigation, userId }) => {
   const [profile, setProfile] = useState({
     name: 'John Doe',
     email: 'johndoe@example.com',
@@ -23,13 +24,13 @@ const ProfileScreen = ({ navigation }) => {
       aspect: [1, 1],
       quality: 1,
     });
-  
+
     if (!result.canceled) {
       setProfile({ ...profile, photo: result.uri });
       uploadPhoto(result.uri);
     }
   };
-  
+
   // Upload Image to Backend
   const uploadPhoto = async (imageUri) => {
     let formData = new FormData();
@@ -38,7 +39,7 @@ const ProfileScreen = ({ navigation }) => {
       type: 'image/jpeg',
       name: 'profile.jpg',
     });
-  
+
     try {
       const token = await AsyncStorage.getItem('authToken'); // Get auth token
       const response = await fetch('https://your-api.com/api/users/profile/photo', {
@@ -49,7 +50,7 @@ const ProfileScreen = ({ navigation }) => {
         },
         body: formData,
       });
-  
+
       const data = await response.json();
       if (response.ok) {
         alert('Profile photo updated successfully!');
@@ -61,7 +62,18 @@ const ProfileScreen = ({ navigation }) => {
       alert('Error uploading profile photo');
     }
   };
-  
+
+  // Share Referral Code
+  const shareReferralCode = async (referralCode) => {
+    try {
+      await Share.share({
+        message: `Join this amazing platform using my referral code: ${referralCode}! Sign up now!`,
+      });
+    } catch (error) {
+      console.error('Error sharing referral code:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Profile Photo Section */}
@@ -82,6 +94,11 @@ const ProfileScreen = ({ navigation }) => {
 
       <Text style={styles.label}>Phone:</Text>
       <Text>{profile?.phone}</Text>
+
+      {/* Referral Code Section */}
+      <Text style={styles.label}>Your Referral Code:</Text>
+      <Text style={styles.referralCode}>{userId}</Text>
+      <Button title="Invite Friends" onPress={() => shareReferralCode(userId)} />
 
       {/* Navigation Buttons */}
       <Button title="Edit Profile" onPress={() => navigation.navigate('UpdateProfile')} />
@@ -115,6 +132,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginTop: 10,
+  },
+  referralCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007bff',
+    marginBottom: 10,
   },
 });
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
-import { getServiceById } from '../../services/appserviceService'; // Assuming you have a service for API calls
+import { getServiceById } from '../../services/appserviceService';
+import { useNavigation } from '@react-navigation/native';
 
 const ServiceDetailsScreen = ({ route }) => {
   const { serviceId } = route.params;
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchServiceDetails = async () => {
@@ -32,6 +34,12 @@ const ServiceDetailsScreen = ({ route }) => {
           <Text style={styles.description}>{service?.description}</Text>
           <Text>Category: {service?.category}</Text>
           <Text>Price: ${service?.price}</Text>
+
+          {/* Book Now Button */}
+          <Button
+            title="Book Now"
+            onPress={() => navigation.navigate('BookingConfirmation', { service })}
+          />
         </>
       )}
     </View>

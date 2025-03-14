@@ -163,3 +163,161 @@ For iOS:
 
 
 npx react-native run-ios
+
+# FRONT END VIEWS AND FUNCTIONALLITY
+
+Since your app is a **multi-service marketplace** with an **escrow system**, I'll suggest a clean, modern UI with a **user-friendly design**, focusing on **simplicity, efficiency, and a seamless experience** for both clients and agents.  
+
+---
+
+## **🔹 UI Suggestions for Your Marketplace App (React Native)**  
+
+### **1️⃣ Welcome & Authentication**  
+✅ **Splash Screen** – A simple logo animation with your app name.  
+✅ **Login/Register Screens** – Clean UI with email/phone login, social login, and OTP verification.  
+✅ **KYC Verification Screen** – A step-by-step process to verify agents and users (ID upload, selfie, address proof).  
+
+---
+
+### **2️⃣ Home Screen (Client & Agent)**  
+👤 **Client View:**  
+- Search bar (to find agents by category, location)  
+- Featured services (cards with images & descriptions)  
+- Categories section (Cleaning, Water Supply, Home Transfer, Food Delivery)  
+- “Top-rated” & “Available Now” service providers  
+
+👨‍🔧 **Agent View:**  
+- Toggle for **Availability Status**  
+- Quick links: **View Bookings, Earnings, Analytics, Profile**  
+- Recent requests and upcoming jobs  
+
+🛠 **Navigation:**  
+- **Bottom Tab Navigation:** Home | Bookings | Wallet | Profile  
+- **Drawer Menu (for extra features like support, settings, help center)**  
+
+---
+
+### **3️⃣ Service Booking & Escrow Management**  
+📌 **Service Details Page**  
+- Service description, images, price estimate  
+- **Agent’s Profile** (ratings, reviews, experience, availability toggle)  
+- “Book Now” button → Opens a payment confirmation screen  
+
+💰 **Escrow Payment Screen**  
+- **Select Payment Method** (Mobile Money, Wallet, Card)  
+- **Escrow Confirmation & Fee Breakdown**  
+- Payment success page with status updates  
+
+🛑 **Dispute Resolution UI**  
+- “Raise a Dispute” button inside active orders  
+- Live chat between client & agent  
+- Admin intervention option  
+
+---
+
+### **4️⃣ Wallet & Payment Management**  
+💼 **Wallet Screen (For Clients & Agents)**  
+- Balance overview  
+- “Deposit” & “Withdraw” buttons  
+- Transaction history (Pending, Completed, Disputed)  
+- Withdraw to **Mobile Money** or **Bank Account**  
+
+📊 **Earnings & Analytics (For Agents)**  
+- **Daily, Weekly, Monthly Earnings**  
+- **Ratings & Reviews Summary**  
+- **Total Jobs Completed & Customer Satisfaction %**  
+
+---
+
+### **5️⃣ Notifications & Communication**  
+🔔 **Push & SMS Notifications**  
+- Payment received  
+- Escrow release updates  
+- Dispute resolution updates  
+
+💬 **Live Chat System**  
+- **Client & Agent chat** (after booking)  
+- **Chat with Admin (for disputes & support)**  
+
+---
+
+### **6️⃣ Profile & Settings**  
+👤 **User Profile Page**  
+- Profile picture, name, phone, email  
+- Service history (for clients)  
+- Work experience & certifications (for agents)  
+
+⚙️ **Settings**  
+- **Notification Preferences**  
+- **Language & Theme (Dark Mode)**  
+- **Support & FAQs**  
+
+---
+
+## 🎨 **Design Style Guide**  
+✅ **Color Scheme:** Professional & clean (e.g., Blue & White with accents)  
+✅ **Typography:** Readable fonts (e.g., Inter, Poppins, or Montserrat)  
+✅ **Buttons & Cards:** Rounded corners, shadows for depth  
+✅ **Icons:** Simple, intuitive icons (Lucide or Material Icons)  
+
+## APP FLOW FROM BOOKING
+
+After a user clicks **"Book Now"**, the app should guide them through the **escrow payment and order confirmation process**. Here's how it should flow:  
+
+---
+
+### **🔹 Post-"Book Now" Flow (Step-by-Step)**  
+
+### **1️⃣ Payment & Escrow Confirmation Screen**  
+✅ The user is taken to a **Payment & Escrow Confirmation** screen, showing:  
+   - **Service Details** (name, price, agent info)  
+   - **Total Amount Breakdown** (service fee + escrow fee, if applicable)  
+   - **Payment Methods:**  
+     - Mobile Money (Flutterwave)  
+     - Wallet Balance   
+   - **"Confirm & Pay" Button**  
+
+🔹 **If Wallet is insufficient**, show a **"Top Up Wallet"** option.  
+
+---
+
+### **2️⃣ Payment Processing & Escrow Holding**  
+✅ After the user confirms payment:  
+   - Funds are **held in escrow** (not sent to the agent yet).  
+   - A **booking confirmation screen** appears with:  
+     - Booking ID  
+     - Estimated time for service delivery  
+     - A **"Chat with Agent"** button (opens a chat for communication).  
+   - The agent receives a **new booking notification**.  
+
+---
+
+### **3️⃣ Agent Accepts or Declines the Booking**  
+🔹 **If the agent accepts:**  
+   - The booking moves to **"Ongoing"** status.  
+   - The user sees **real-time updates** on the agent’s progress.  
+
+🔹 **If the agent declines or doesn’t respond within a time limit:**  
+   - The booking is **canceled**, and the funds **return to the user's wallet**.  
+   - The user can **book another agent**.  
+
+---
+
+### **4️⃣ Service Completion & Escrow Release**  
+✅ Once the service is completed:  
+   - The **user confirms service delivery** (via a “Mark as Completed” button).  
+   - The escrow **releases the payment to the agent**.  
+   - The user is prompted to **rate and review the agent**.  
+
+🔹 **If the user doesn’t confirm within 48 hours, escrow auto-releases funds** unless a dispute is raised.  
+
+---
+
+### **5️⃣ Dispute Handling (If Needed)**  
+🚨 If the user has issues with the service:  
+   - They can **"Raise a Dispute"** from the order screen.  
+   - A **live chat with the agent** opens for resolution.  
+   - If unresolved, the case goes to **admin intervention**.  
+   - Admin manually **decides the dispute** and either releases funds to the agent or refunds the user.  
+
+---

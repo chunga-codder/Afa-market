@@ -113,15 +113,6 @@ const updateKYC = async (req, res) => {
 
 
 
-module.exports = {
-    getUserProfile,
-    updateUserProfile,
-    changePassword,
-    updateKYC,
-    uploadProfilePhoto
-   // Ensure this is here
-  };
-
 //Update Profile Photo
 exports.uploadProfilePhoto = async (req, res) => {
     try {
@@ -139,3 +130,113 @@ exports.uploadProfilePhoto = async (req, res) => {
       res.status(500).json({ message: error.message });
     }
   };
+
+
+// Function to check if the week has reset
+function isNewWeek(lastReset, currentDate) {
+  const lastResetDate = new Date(lastReset);
+  const currentWeek = currentDate.getWeek();
+  const lastResetWeek = lastResetDate.getWeek();
+  return currentWeek !== lastResetWeek;
+}
+
+// Function to update user earnings
+const updateEarnings = async (req, res) => {
+  try {
+    const { userId, earnings } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentDate = new Date();
+
+    // Check if the earnings need to be reset for the week
+    if (isNewWeek(user.last_reset, currentDate)) {
+      user.weekly_earnings = 0;
+      user.last_reset = currentDate;
+    }
+
+    // Check if the earnings exceed the limit
+    if (user.weekly_earnings + earnings > user.weekly_earnings_limit) {
+      earnings = user.weekly_earnings_limit - user.weekly_earnings; // Cap the earnings
+    }
+
+    // Update user earnings
+    user.weekly_earnings += earnings;
+    await user.save();
+
+    return res.status(200).json({
+      message: `Earnings updated successfully. You can still earn $${user.weekly_earnings_limit - user.weekly_earnings} this week.`,
+      updated_earnings: user.weekly_earnings
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Function to get user details including their earnings
+const getUserDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      username: user.username,
+      vip_level: user.vip_level,
+      weekly_earnings: user.weekly_earnings,
+      weekly_earnings_limit: user.weekly_earnings_limit,
+      remaining_earnings: user.weekly_earnings_limit - user.weekly_earnings
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+// Controller to update last visited and check activity
+const updateLastVisited = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the last visited time to the current time
+    user.last_visited = new Date();
+    
+    // Check if the user is still active
+    await user.checkActivity();
+
+    // Respond with the updated status
+    return res.status(200).json({
+      message: user.isFrozen ? 'Your account is frozen due to inactivity.' : 'Welcome back! Your account is active.',
+      isFrozen: user.isFrozen,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+module.exports = {
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
+  updateKYC,
+  uploadProfilePhoto,
+  getUserDetails,
+  updateEarnings,
+  updateLastVisited,
+ // Ensure this is here
+};
+

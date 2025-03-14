@@ -5,9 +5,42 @@ const { sendNotification } = require("./notificationController");
 const { sendSMS } = require("../utils/sendSMS");
 const { sendPushNotification } = require("../utils/sendPushNotification");
 
+
+// Process Payment with Referral Commission
+async function processPayment(userId, amount) {
+    try {
+      const user = await User.findById(userId);
+  
+      if (!user) throw new Error("User not found");
+  
+      // Process payment logic here...
+  
+      // Check if the user was referred
+      if (user.referrerId) {
+        const commission = amount * 0.05; // 5% commission
+  
+        // Add commission to referrer’s earnings
+        await User.findByIdAndUpdate(user.referrerId, {
+          $inc: { referralEarnings: commission }
+        });
+  
+        console.log(`Commission of ${commission} given to referrer ${user.referrerId}`);
+      }
+  
+      return { success: true, message: "Payment successful" };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: "Payment failed" };
+    }
+  }
+  
+
 // Helper function to create a new transaction
 const createTransaction = async (userId, transactionType, amount, recipientId = null, escrowId = null, status = "completed") => {
     const user = await User.findById(userId);
+    if (!userId || !transactionType || !amount) {
+        return res.status(400).json({ error: "userId, transactionType, and amount are required" });
+    }
     if (!user) throw new Error("User not found");
 
     const transaction = new Transaction({
@@ -317,16 +350,16 @@ const getTransactionHistory = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
- module.exports = {
+module.exports = {
     createTransaction,
-        rateTransaction,
-        depositFunds,
-        withdrawFunds,
-        transferFunds,
-        createEscrow,
-        completeEscrow,
-        approveTransaction,
-        rejectTransaction,
-        getTransactionHistory
-
- }
+    rateTransaction,
+    depositFunds,
+    withdrawFunds,
+    transferFunds,
+    createEscrow,
+    completeEscrow,
+    approveTransaction,
+    rejectTransaction,
+    getTransactionHistory,
+    processPayment
+};
