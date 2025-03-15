@@ -3,7 +3,33 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL = 'https://localhost:5000/api/services';
 
 // Get authentication token
-const getAuthToken = async () => {
+const getAuthToken = async () => {// Button.js
+  import React from 'react';
+  import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+  
+  const Button = ({ title, onPress, style }) => {
+    return (
+      <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
+        <Text style={styles.buttonText}>{title}</Text>
+      </TouchableOpacity>
+    );
+  };
+  
+  const styles = StyleSheet.create({
+    button: {
+      backgroundColor: '#4CAF50',
+      paddingVertical: 15,
+      borderRadius: 5,
+      alignItems: 'center',
+    },
+    buttonText: {
+      color: 'white',
+      fontSize: 16,
+    },
+  });
+  
+  export default Button;
+  
   return await AsyncStorage.getItem('authToken');
 };
 
