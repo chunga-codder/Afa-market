@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
-import { View, Button, Image, Text, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';  // If using Expo
+import { View, Image, Text, StyleSheet, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import ProfileHeader from '../components/ProfileHeader'; // Import ProfileHeader
+import Avatar from '../components/Avatar'; // Import Avatar Component
+import CustomButton from '../components/CustomButton'; // Import Custom Button Component
 
 const UploadProfilePhotoScreen = () => {
-  const [photo, setPhoto] = useState(null);
+  const { user } = useSelector(state => state.auth); // Get user data from Redux store
+  const [photo, setPhoto] = useState(user.profilePhoto || null);
 
   // Function to handle image picking
   const pickImage = async () => {
-    // Request permission for camera roll access if necessary
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       alert('Permission to access camera roll is required!');
       return;
     }
 
-    // Launch image picker and get the selected image
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],  // Keep the image aspect ratio square
-      quality: 1,  // Max quality
+      aspect: [1, 1],
+      quality: 1,
     });
 
-    // If the user selected an image, update the state
-    if (!result.cancelled) {
-      setPhoto(result.uri);
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
     }
   };
 
@@ -34,39 +37,48 @@ const UploadProfilePhotoScreen = () => {
       alert('Please select a photo!');
       return;
     }
-    
-    // Here, you would send the image to your backend or update the user's profile
-    // For example:
+
     try {
       const formData = new FormData();
       formData.append('profilePhoto', {
         uri: photo,
-        type: 'image/jpeg', // Assuming the image is a JPEG; you can adjust if needed
+        type: 'image/jpeg',
         name: 'profile-photo.jpg',
       });
-      
-      // Replace with actual backend endpoint
+
       await axios.patch('http://localhost:5000/api/users/profile-photo', formData, {
-        headers: { Authorization: `Bearer YOUR_USER_TOKEN` },
+        headers: { Authorization: `Bearer ${user.token}` },
       });
 
-      alert('Profile photo updated successfully!');
+      Alert.alert('Success', 'Profile photo updated successfully!');
     } catch (error) {
       console.error('Error uploading profile photo:', error);
-      alert('Failed to upload profile photo.');
+      Alert.alert('Error', 'Failed to upload profile photo.');
     }
   };
 
   return (
     <View style={styles.container}>
+      {/* Profile Header with Avatar */}
+      <ProfileHeader user={{ 
+        profilePhoto: photo || user.profilePhoto, 
+        fullName: user.fullName, 
+        averageRating: user.averageRating || 4.5 
+      }}>
+        <Avatar imageUrl={photo || user.profilePhoto} size={100} />
+      </ProfileHeader>
+
       <Text style={styles.title}>Upload Profile Photo</Text>
+
       {photo ? (
         <Image source={{ uri: photo }} style={styles.image} />
       ) : (
         <Text>No photo selected</Text>
       )}
-      <Button title="Pick an Image" onPress={pickImage} />
-      <Button title="Save Profile Photo" onPress={handleSaveImage} />
+
+      {/* Custom Buttons */}
+      <CustomButton title="Pick an Image" onPress={pickImage} />
+      <CustomButton title="Save Profile Photo" onPress={handleSaveImage} color="green" />
     </View>
   );
 };

@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Button, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { getNotifications, markAsRead } from '../../services/notificationService';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { getNotifications, markNotificationAsRead } from '../services/notificationService'; // Notification services
+import { useNavigation } from '@react-navigation/native';
 
 const NotificationsScreen = ({ userId }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const data = await getNotifications(userId);  // Fetch notifications for the user
-        setNotifications(data);
+        const response = await getNotifications(userId);
+        setNotifications(response);
+        setLoading(false);
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      } finally {
+        console.error('Error fetching notifications:', error);
         setLoading(false);
       }
     };
@@ -21,45 +23,42 @@ const NotificationsScreen = ({ userId }) => {
     fetchNotifications();
   }, [userId]);
 
-  const handleMarkAsRead = async (notificationId) => {
+  // Handle notification click (mark as read and navigate to details)
+  const handleNotificationClick = async (notificationId) => {
     try {
-      await markAsRead(notificationId);
-      setNotifications((prevNotifications) =>
-        prevNotifications.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, read: true }
-            : notification
-        )
+      await markNotificationAsRead(notificationId);
+      const updatedNotifications = notifications.map((notification) =>
+        notification.id === notificationId ? { ...notification, read: true } : notification
       );
+      setNotifications(updatedNotifications); // Update the notification list state
+      navigation.navigate('NotificationDetail', { notificationId });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
   };
 
+  // Render each notification item
   const renderNotification = ({ item }) => (
-    <View style={styles.notificationItem}>
-      <Text style={styles.notificationText}>{item.message}</Text>
-      <Text style={styles.notificationDate}>{item.date}</Text>
-      {item.read ? (
-        <Text style={styles.readStatus}>Read</Text>
-      ) : (
-        <TouchableOpacity onPress={() => handleMarkAsRead(item.id)}>
-          <Button title="Mark as Read" />
-        </TouchableOpacity>
-      )}
-    </View>
+    <TouchableOpacity
+      style={styles.notificationItem}
+      onPress={() => handleNotificationClick(item.id)}
+    >
+      <Text style={styles.notificationTitle}>{item.message}</Text>
+      <Text style={styles.notificationDate}>{new Date(item.createdAt).toLocaleString()}</Text>
+      {!item.read && <Text style={styles.unreadIndicator}>New</Text>}
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notifications</Text>
       {loading ? (
         <Text>Loading...</Text>
       ) : (
         <FlatList
           data={notifications}
-          renderItem={renderNotification}
           keyExtractor={(item) => item.id.toString()}
+          renderItem={renderNotification}
+          ListEmptyComponent={<Text>No notifications available</Text>}
         />
       )}
     </View>
@@ -69,33 +68,27 @@ const NotificationsScreen = ({ userId }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#fff',
   },
   notificationItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
-  notificationText: {
+  notificationTitle: {
+    fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 5,
   },
   notificationDate: {
     fontSize: 12,
     color: '#888',
-    marginBottom: 10,
+    marginTop: 4,
   },
-  readStatus: {
-    color: 'green',
+  unreadIndicator: {
     fontSize: 12,
+    color: 'red',
+    marginTop: 4,
   },
 });
 

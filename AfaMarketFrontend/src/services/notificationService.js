@@ -16,7 +16,7 @@ export const getNotifications = async (userId) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    timeout(10000);
+  
     const data = await response.json();
     if (response.ok) {
       return data;
