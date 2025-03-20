@@ -21,6 +21,8 @@ const UserSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "admin", "agent"], default: "user" },
     walletBalance: { type: Number, default: 0 },
+    resetToken: { type: String, default: null },
+    resetTokenExpiration: { type: Date, default: null },
     isFrozen: { type: Boolean, default: false },
     kyc: {
       documentType: {
@@ -66,21 +68,24 @@ UserSchema.virtual("averageRatingValue").get(function () {
   const totalRatings = this.ratings.reduce((sum, rating) => sum + rating, 0);
   return totalRatings / this.ratings.length;
 });
-
-// Check if user has visited today and update the active status
+// Check if user has visited in the current month and update the active status
 UserSchema.methods.checkActivity = function () {
   const today = new Date();
   const lastVisitedDate = new Date(this.last_visited);
   
-  // If the last visit is not today, freeze the account
-  if (lastVisitedDate.toDateString() !== today.toDateString()) {
-    this.isFrozen = true; // Freeze account if user hasn't visited today
+  // Get the start of the current month
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // If the last visit is before the start of the current month, freeze the account
+  if (lastVisitedDate < startOfMonth) {
+    this.isFrozen = true; // Freeze account if user hasn't visited this month
   } else {
-    this.isFrozen = false; // Keep account active if user visited today
+    this.isFrozen = false; // Keep account active if user visited this month
   }
 
   // Save the updated status
   return this.save();
 };
+
 
 module.exports = mongoose.model("User", UserSchema);

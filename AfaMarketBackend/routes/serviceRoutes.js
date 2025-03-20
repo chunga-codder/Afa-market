@@ -1,24 +1,38 @@
 const express = require('express');
-const { getServiceCategories, createService, getServices, getServiceById, updateService, deleteService } = require('../controllers/serviceController');
-const { protect } = require('../middlewares/authMiddleware');
-
 const router = express.Router();
+const { protect } = require('../middlewares/authMiddleware'); // Assuming you have a middleware to protect routes
+const {
+  
+    createService,
+    getServices,
+    getServiceById,
+    updateService,
+    deleteService,
+    getServiceCategories,
+  
+} = require('../controllers/serviceController');
 
-//  router.get('/categories', getServiceCategories); // Get predefined service categories
-router.post('/create', [protect], createService); // Create a new service
-router.get('/', getServices); // Get all active services
-router.get('/:id', getServiceById); // Get a specific service
-router.put('/:id', [protect], updateService); // Update service (only provider)
-router.delete('/:id', [protect], deleteService); // Delete service (only provider)
+// Get predefined service categories (no authentication needed for this one)
+// router.get('/categories', [protect], getServiceCategories);
+
+// Create a new service (protected route, provider only)
+router.post('/create', [protect], createService);
+
+// Get all active services (no authentication needed for this one)
+router.get('/', [protect], getServices);
+
+// Get a specific service by ID (no authentication needed for this one)
+router.get('/:id',[protect], getServiceById);
+
+// Update an existing service (protected route, provider only)
+router.put('/:id', [protect], updateService);
+
+// Delete a service (protected route, provider only)
+router.delete('/:id', [protect], deleteService);
+
+// Endpoint to get service categories (protected)
+router.get('/categories', [protect], (req, res) => {
+  res.json({ categories: getServiceCategories });
+});
 
 module.exports = router;
-
-
-// Next Steps
-// Frontend:
-
-// When users select House Moving or Transportation, prompt them to specify whether they have a transport vehicle or not.
-// Implement a dropdown to select service category from the predefined list.
-// API Connection:
-
-// Fetch the categories from /api/services/categories and populate the category selection dropdown.

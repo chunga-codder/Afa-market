@@ -1,5 +1,5 @@
 const express = require("express");
-const { searchNearbyUsers } = require("../controllers/searchController");
+const { searchNearbyUsers } = require("../controllers/nearbyUsersController");
 const { protect } = require("../middlewares/authMiddleware");
 
 const router = express.Router();

@@ -1,14 +1,21 @@
-const Escrow = require('../models/Escrow'); // Import Escrow model
-const Transaction = require('../models/Transaction'); // Import Transaction model
+const Booking = require('../models/Booking'); // Move this to the top
+const Escrow = require('../models/Escrow');
+const Transaction = require('../models/Transaction');
 
 exports.acceptBooking = async (req, res) => {
   const { bookingId } = req.params;
+  const loggedInUserId = req.user.id; // Ensure you extract the authenticated user's ID
 
   try {
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Ensure only the assigned agent (seller) can accept the booking
+    if (booking.seller.toString() !== loggedInUserId) {
+      return res.status(403).json({ message: 'You are not authorized to approve this booking' });
     }
 
     if (booking.status !== 'pending_agent_approval') {
@@ -19,13 +26,13 @@ exports.acceptBooking = async (req, res) => {
     booking.status = 'approved';
     await booking.save();
 
-    // Now create escrow transaction
+    // Create escrow transaction
     const newTransaction = new Transaction({
       userId: booking.buyer,
       transactionType: 'escrow',
       amount: booking.amount,
       status: 'pending',
-      transactionReference: booking._id, // Use booking ID as reference
+      transactionReference: booking._id,
       paymentMethod: 'mobile_money',
     });
 
@@ -60,34 +67,38 @@ exports.acceptBooking = async (req, res) => {
 };
 
 exports.declineBooking = async (req, res) => {
-    const { bookingId } = req.params;
-  
-    try {
-      const booking = await Booking.findById(bookingId);
-  
-      if (!booking) {
-        return res.status(404).json({ message: 'Booking not found' });
-      }
-  
-      if (booking.status !== 'pending_agent_approval') {
-        return res.status(400).json({ message: 'Booking is not pending approval' });
-      }
-  
-      // Update booking status to "declined"
-      booking.status = 'declined';
-      await booking.save();
-  
-      res.status(200).json({
-        message: 'Booking request declined by the agent.',
-        booking,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'An error occurred while declining the booking' });
-    }
-  };
+  const { bookingId } = req.params;
+  const loggedInUserId = req.user.id;
 
-  const Booking = require('../models/Booking'); // Import Booking model
+  try {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Ensure only the assigned agent (seller) can decline the booking
+    if (booking.seller.toString() !== loggedInUserId) {
+      return res.status(403).json({ message: 'You are not authorized to decline this booking' });
+    }
+
+    if (booking.status !== 'pending_agent_approval') {
+      return res.status(400).json({ message: 'Booking is not pending approval' });
+    }
+
+    // Update booking status to "declined"
+    booking.status = 'declined';
+    await booking.save();
+
+    res.status(200).json({
+      message: 'Booking request declined by the agent.',
+      booking,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while declining the booking' });
+  }
+};
 
 // Create a booking request
 exports.createBookingRequest = async (req, res) => {
@@ -118,6 +129,7 @@ exports.createBookingRequest = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while creating the booking' });
   }
 };
+
 
 
 // Expected Booking Flow

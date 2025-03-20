@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Service = require('../models/Service');
 
 // 🟢 Create a New Service
-exports.createService = async (req, res) => {
+const createService = async (req, res) => {
   try {
     // Get user from database
     const user = await User.findById(req.user.id);
@@ -24,7 +24,7 @@ exports.createService = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please specify if you have a transport vehicle.' });
     }
 
-     //Create the new service
+    //  Create the new service
     const service = new Service({
       title,
       description,
@@ -44,7 +44,7 @@ exports.createService = async (req, res) => {
 };
 
 // 🔵 Get All Services
-exports.getServices = async (req, res) => {
+const getServices = async (req, res) => {
   try {
     const services = await Service.find({ isActive: true }).populate('provider agent', 'name email');
     res.status(200).json({ success: true, services });
@@ -54,7 +54,7 @@ exports.getServices = async (req, res) => {
 };
 
 // 🟡 Get a Single Service
-exports.getServiceById = async (req, res) => {
+const getServiceById = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id).populate('provider agent', 'name email');
     if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
@@ -66,7 +66,7 @@ exports.getServiceById = async (req, res) => {
 };
 
 // 🟠 Update Service (Only Provider)
-exports.updateService = async (req, res) => {
+const updateService = async (req, res) => {
   try {
     const { title, description, price, category, location, isActive, agent, hasTransportVehicle } = req.body;
     const service = await Service.findById(req.params.id);
@@ -92,7 +92,7 @@ exports.updateService = async (req, res) => {
 };
 
 // 🔴 Delete Service (Only Provider)
-exports.deleteService = async (req, res) => {
+const deleteService = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
     if (!service || service.provider.toString() !== req.user.id) {
@@ -104,4 +104,13 @@ exports.deleteService = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete service', error: error.message });
   }
+};
+
+// Export functions as properties of an object
+module.exports = {
+  createService,
+  getServices,
+  getServiceById,
+  updateService,
+  deleteService
 };

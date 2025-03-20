@@ -239,3 +239,39 @@ exports.freezeUnfreezeAccount = async (req, res) => {
     }
 };
 
+// Controller to assign admin role to a user (via role change)
+exports.changeUserRole = async (req, res) => {
+    try {
+        const { userId, newRole } = req.body; // newRole can be 'admin', 'agent', etc.
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Check if role is 'admin' and promote if not already
+        if (newRole === 'admin') {
+            const existingAdmin = await Admin.findOne({ userId: userId });
+            if (existingAdmin) {
+                return res.status(400).json({ success: false, message: 'User is already an admin.' });
+            }
+
+            // Assign the admin role to the user
+            const admin = new Admin({ userId: userId });
+            await admin.save();
+            user.role = 'admin'; // Update the user's role
+            await user.save();
+        } else {
+            // Handle other roles if needed, for example 'agent' or 'user'
+            user.role = newRole;
+            await user.save();
+        }
+
+        res.json({ success: true, message: `User role has been changed to ${newRole}.` });
+    } catch (error) {
+        console.error('Error changing user role:', error);
+        res.status(500).json({ success: false, message: 'Server error', error });
+    }
+};
+
+
