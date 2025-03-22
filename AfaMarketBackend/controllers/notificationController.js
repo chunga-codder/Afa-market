@@ -1,11 +1,9 @@
 const Notification = require('../models/Notification');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
-const socketIo = require('socket.io');
 const sendEmail = require('../utils/sendEmail');
 const sendSMS = require('../utils/sendSMS');
 const sendPushNotification = require('../utils/sendPushNotification');
-
 
 // Setup Twilio for SMS notifications
 const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -40,34 +38,6 @@ const sendEmailNotification = async (toEmail, subject, text) => {
   }
 };
 
-exports.createNotification = async (userId, message, type, phoneNumber, email) => {
-    try {
-      // Create and save notification in the database
-      const notification = new Notification({
-        userId,
-        message,
-        type,
-        status: 'unread',
-        createdAt: new Date(),
-      });
-  
-      await notification.save();
-  
-      // Send push notification
-      await sendPushNotification(userId, message); // This will need your push notification implementation
-  
-      // Send email notification
-      await sendEmail(email, 'New Notification', message);
-  
-      // Send SMS notification (only for high priority, e.g., transfer, dispute)
-      if (type === 'transfer' || type === 'dispute') {
-        await sendSMS(phoneNumber, message);  // You'll need an SMS service (like Twilio) for this
-      }
-    } catch (error) {
-      console.error('Error creating notification:', error);
-    }
-  };
-
 // Send SMS Notification
 const sendSMSNotification = async (toPhoneNumber, message) => {
   try {
@@ -84,11 +54,13 @@ const sendSMSNotification = async (toPhoneNumber, message) => {
 // Create in-app push notification, email, and SMS
 exports.createNotification = async (userId, message, type, userPhoneNumber, userEmail) => {
   try {
-    // Save the notification in the database
+    // Save the notification in the database with status as "unread"
     const newNotification = new Notification({
       userId,
       message,
       type,
+      status: 'unread', // Status is set to 'unread' initially
+      createdAt: new Date(),
     });
 
     await newNotification.save();
@@ -97,7 +69,7 @@ exports.createNotification = async (userId, message, type, userPhoneNumber, user
     io.to(userId.toString()).emit('notification', {
       message,
       type,
-      status: 'unread',
+      status: 'unread', // Aligning with the schema's 'status' field
       createdAt: new Date(),
     });
 
@@ -109,6 +81,9 @@ exports.createNotification = async (userId, message, type, userPhoneNumber, user
     // Send Email (for critical updates like escrow releases or dispute resolutions)
     await sendEmailNotification(userEmail, `New Notification: ${type}`, message);
 
+    // Send Push Notification (for all notifications)
+    await sendPushNotification(userId, message);
+
     return newNotification;
   } catch (error) {
     console.error('Error creating notification:', error);
@@ -116,7 +91,7 @@ exports.createNotification = async (userId, message, type, userPhoneNumber, user
   }
 };
 
-// Mark notification as read
+// Mark notification as read (updates the status to 'read')
 exports.markAsRead = async (notificationId) => {
   try {
     const notification = await Notification.findById(notificationId);
@@ -124,19 +99,21 @@ exports.markAsRead = async (notificationId) => {
       throw new Error('Notification not found');
     }
 
-    notification.status = 'read';
+    notification.status = 'read'; // Update the notification status to 'read'
     await notification.save();
     return notification;
   } catch (error) {
+    console.error('Error marking notification as read:', error);
     throw new Error('Unable to mark notification as read');
   }
 };
 
-// Get notifications for a user
+// Get notifications for a user, including their status
 exports.getNotifications = async (userId) => {
   try {
     return await Notification.find({ userId }).sort({ createdAt: -1 });
   } catch (error) {
+    console.error('Error retrieving notifications:', error);
     throw new Error('Unable to retrieve notifications');
   }
 };

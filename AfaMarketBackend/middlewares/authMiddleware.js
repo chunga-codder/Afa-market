@@ -1,59 +1,72 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// Middleware to verify JWT and attach user to request
 exports.protect = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-    try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
+    let token = req.headers.authorization?.startsWith("Bearer") ? req.headers.authorization.split(" ")[1] : null;
 
-      // 🛑 Restrict access if KYC is not verified
-      if (!req.user.kyc.verified) {
-        return res.status(403).json({ message: "KYC verification required. Please complete KYC to proceed." });
-      }
-
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Not authorized, invalid token" });
+    if (!token) {
+        return res.status(401).json({ message: "Not authorized, no token provided." });
     }
-  } else {
-    res.status(401).json({ message: "Not authorized, no token" });
-  }
-};
 
-
-// Middleware to authenticate users
-exports.authenticate = async (req, res, next) => {
     try {
-        const token = req.header('Authorization');
-        if (!token) {
-            return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select("-password");
+
+        if (!user) {
+            return res.status(401).json({ message: "User not found. Invalid token." });
         }
 
-        const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
-        req.user = decoded; // Attach user info to request object
+        // Ensure KYC is verified
+        if (!user.kyc.verified) {
+            return res.status(403).json({ message: "KYC verification required. Please complete KYC to proceed." });
+        }
 
+        req.user = user; // Attach full user object to request
         next();
     } catch (error) {
-        console.error('Authentication error:', error);
-        res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+        console.error("Auth error:", error);
+        return res.status(401).json({ message: "Not authorized, invalid or expired token." });
     }
 };
+
+
+// Middleware to enforce KYC verification in particular routes in feauture
+exports.requireKYC = (req, res, next) => {
+  if (!req.user?.kyc?.verified) {
+      return res.status(403).json({ message: "KYC verification required. Please complete KYC to proceed." });
+  }
+  next();
+};
+
+// // Middleware for authentication (Attaches decoded user to req.user)
+// exports.authenticate = async (req, res, next) => {
+//     let token = req.headers.authorization?.startsWith("Bearer") ? req.headers.authorization.split(" ")[1] : null;
+
+//     if (!token) {
+//         return res.status(401).json({ message: "Access denied. No token provided." });
+//     }
+
+//     try {
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const user = await User.findById(decoded.id).select("-password");
+
+//         if (!user) {
+//             return res.status(401).json({ message: "User not found. Invalid token." });
+//         }
+
+//         req.user = user;
+//         next();
+//     } catch (error) {
+//         console.error("Authentication error:", error);
+//         return res.status(401).json({ message: "Invalid or expired token." });
+//     }
+// };
 
 // Middleware to authorize only admins
-exports.authorizeAdmin = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user || user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Access denied. Admins only.' });
-        }
-
-        next();
-    } catch (error) {
-        console.error('Authorization error:', error);
-        res.status(500).json({ success: false, message: 'Server error.' });
+exports.authorizeAdmin = (req, res, next) => {
+    if (!req.user || req.user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied. Admins only." });
     }
+    next();
 };
-

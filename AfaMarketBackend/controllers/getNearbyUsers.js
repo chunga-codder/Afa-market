@@ -11,7 +11,7 @@ const getNearbyUsers = async (latitude, longitude) => {
             type: "Point",
             coordinates: [longitude, latitude], // longitude, latitude order
           },
-          $maxDistance: 10000, // Max distance in meters (e.g., 10km)
+          $maxDistance: 30000, // Max distance in meters (e.g., 10km)
         },
       },
     });

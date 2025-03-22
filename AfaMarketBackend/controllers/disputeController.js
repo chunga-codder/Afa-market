@@ -19,8 +19,12 @@ exports.raiseDispute = async (req, res) => {
     const dispute = new Dispute({
       escrowId,
       userId: req.userId,
+      buyerId: escrow.buyerId, // Add buyer ID
+      agentId: escrow.agentId, // Add agent ID
       reason,
     });
+    
+    
     await dispute.save();
 
     res.status(200).json({
@@ -35,25 +39,34 @@ exports.raiseDispute = async (req, res) => {
 // Create a new dispute for transactions
 exports.createDispute = async (req, res) => {
   try {
-    const { transactionId, buyerId, agentId, reason } = req.body;
+    const { transactionId, reason } = req.body;
 
     // Validate required fields
-    if (!transactionId || !buyerId || !agentId || !reason) {
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!transactionId || !reason) {
+      return res.status(400).json({ error: 'Transaction ID and reason are required' });
     }
 
-    // Check if transaction exists and is in a disputable state
-    const transaction = await Transaction.findById(transactionId);
+    // Check if transaction exists
+    const transaction = await Transaction.findById(transactionId).populate('escrowId');
     if (!transaction) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
+
+    // Automatically pick the other IDs (buyer, agent, and escrow) from the transaction
+    const escrow = transaction.escrowId;  // Assuming transaction is linked to an escrow document
+    if (!escrow) {
+      return res.status(400).json({ error: 'This transaction does not have an associated escrow' });
+    }
+
+    const buyerId = escrow.senderId;  // Assuming senderId is the buyer
+    const agentId = escrow.recipientId;  // Assuming recipientId is the agent
 
     // Check if the transaction is already completed or resolved
     if (transaction.status === 'Completed' || transaction.status === 'Resolved') {
       return res.status(400).json({ error: 'This transaction is already completed or resolved' });
     }
 
-    // Create a dispute
+    // Create the dispute
     const dispute = new Dispute({
       transactionId,
       buyerId,
@@ -204,8 +217,11 @@ exports.closeDispute = async (req, res) => {
 exports.getDisputes = async (req, res) => {
   try {
     const disputes = await Dispute.find()
-      .populate('buyerId agentId resolvedByAdmin')
-      .populate('transactionId'); // Optionally populate transaction details as well
+  .populate('buyerId', 'name email') // Only fetch name & email
+  .populate('agentId', 'name email') 
+  .populate('resolvedByAdmin', 'name') 
+  .populate('transactionId', 'amount status');
+
 
     res.json(disputes);
   } catch (error) {

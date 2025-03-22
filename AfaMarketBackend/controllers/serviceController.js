@@ -106,11 +106,25 @@ const deleteService = async (req, res) => {
   }
 };
 
-// Export functions as properties of an object
+
+// 🟡 Get predefined service categories
+const getServiceCategories = (req, res) => {
+  try {
+    const categories = ['House Moving and Transfer Assistant', 'Transportation', 'Cleaning Services', 'Food Delivery']; // Define your categories here
+    res.status(200).json({ success: true, categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching categories', error: error.message });
+  }
+};
+
+// The other functions remain the same...
+
 module.exports = {
   createService,
   getServices,
   getServiceById,
   updateService,
-  deleteService
+  deleteService,
+  getServiceCategories
 };
+

@@ -19,6 +19,6 @@ router.get('/:escrowReference', [protect], escrowController.getEscrowByReference
 router.post('/resolve-dispute', [protect, admin], escrowController.resolveDispute);
 
 // 🟢 Cancel an escrow (Admin or Authorized User)
-router.post('/cancel', [protect, admin], escrowController.cancelEscrow);
+// router.post('/cancel', [protect, admin], escrowController.cancelEscrow);
 
 module.exports = router;

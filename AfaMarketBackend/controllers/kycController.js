@@ -158,15 +158,5 @@ exports.updateKYC = async (req, res) => {
     }
 };
 
-// Get KYC status
-exports.getKYCStatus = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        res.json({ kycStatus: user.kyc.status });
-    } catch (error) {
-        console.error("Error fetching KYC status:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-};
 
 

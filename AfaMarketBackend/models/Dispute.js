@@ -2,20 +2,22 @@ const mongoose = require('mongoose');
 
 const DisputeSchema = new mongoose.Schema(
   {
-    transactionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Transaction', // Linking to the Transaction model
-      required: true,
-    },
+    transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction', required: true },
     buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    disputeStatus: { type: String, enum: ['none', 'raised', 'resolved'], default: 'none' },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    status: { type: String, enum: ['Open', 'Resolved', 'Pending', 'Rejected'], default: 'Open' },
+    agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Agent involved
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Who raised the dispute
+    status: { type: String, enum: ['Raised', 'Under Review', 'Resolved', 'Closed'], default: 'Raised' },
     adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // Assigned admin
-    reason: {
-      type: String,
-      required: true,
-      enum: ['fraud', 'delayed delivery', 'wrong product', 'service issue', 'other'], // Define specific reasons for the dispute
+    escrowId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Escrow',
+      required: false, // A dispute could be linked to an escrow or a transaction
+    },
+    otherReason: { type: String }, // Optional custom reason
+    reason: { 
+      type: String, 
+      required: true, 
+      enum: ['fraud', 'delayed delivery', 'wrong product', 'service issue', 'other'], // Specific reasons for the dispute
     },
     messages: [
       {
@@ -25,15 +27,9 @@ const DisputeSchema = new mongoose.Schema(
       },
     ],
     resolution: { type: String, enum: ['refund', 'release'] },
-    resolvedByAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // Reference to Admin model
+    resolvedByAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // Admin who resolved the dispute
   },
-  { timestamps: true } // Automatically manages createdAt and updatedAt
+  { timestamps: true } // Automatically adds createdAt & updatedAt
 );
-
-// Middleware to update `updatedAt` field on any change
-DisputeSchema.pre('save', function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
 
 module.exports = mongoose.model('Dispute', DisputeSchema);

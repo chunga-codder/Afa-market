@@ -143,7 +143,7 @@ function isNewWeek(lastReset, currentDate) {
 // Function to update user earnings
 const updateEarnings = async (req, res) => {
   try {
-    const { userId, earnings } = req.body;
+    let { userId, earnings } = req.body;
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -186,7 +186,7 @@ const getUserDetails = async (req, res) => {
     }
 
     return res.status(200).json({
-      username: user.username,
+      fullName: user.fullName,
       vip_level: user.vip_level,
       weekly_earnings: user.weekly_earnings,
       weekly_earnings_limit: user.weekly_earnings_limit,
@@ -228,6 +228,44 @@ const updateLastVisited = async (req, res) => {
 
 
 
+// Controller for updating availability
+const updateAvailability = async (req, res) => {
+  try {
+    const { availability } = req.body; // Expected to be a boolean value (true or false)
+
+    // Ensure that the provided availability is a boolean value
+    if (typeof availability !== 'boolean') {
+      return res.status(400).json({ message: 'Availability must be a boolean value (true or false)' });
+    }
+
+    // Find the user by ID (from authentication)
+    const user = await User.findById(req.user.id); // Assumes `req.user.id` is set by the authentication middleware
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the isAvailable field
+    user.isAvailable = availability;
+
+    // Save the updated user document
+    await user.save();
+
+    // Return the updated availability status
+    return res.status(200).json({
+      message: `Availability updated successfully to ${availability ? 'available' : 'unavailable'}`,
+      isAvailable: user.isAvailable,
+    });
+  } catch (error) {
+    console.error('Error updating availability:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+module.exports = { updateAvailability };
+
+
+
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
@@ -237,6 +275,7 @@ module.exports = {
   getUserDetails,
   updateEarnings,
   updateLastVisited,
+  updateAvailability,
  // Ensure this is here
 };
 

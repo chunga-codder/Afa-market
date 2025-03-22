@@ -8,7 +8,7 @@
 const mongoose = require('mongoose');
 
 const WalletSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   balance: { type: Number, default: 0 },
   transactions: [
     {
@@ -16,12 +16,16 @@ const WalletSchema = new mongoose.Schema({
       amount: { type: Number, required: true },
       currency: { type: String, default: 'XAF' }, // ✅ Supports Cameroon currency
       mobileMoneyNumber: { type: String }, // ✅ For MoMo transactions
-      transactionReference: { type: String, unique: true }, // ✅ Required for Flutterwave tracking
+      transactionReference: { type: String, required: true }, // ✅ Required for Flutterwave tracking
       recipientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // ✅ For in-app transfers
-      status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
+      status: { type: String, enum: ['pending', 'completed', 'failed', 'escrow', 'disputed'], default: 'pending' }, // ✅ Added escrow & dispute tracking
       createdAt: { type: Date, default: Date.now },
     },
   ],
 });
 
+// ✅ Ensure Unique Transaction References
+WalletSchema.index({ 'transactions.transactionReference': 1 }, { unique: true });
+
 module.exports = mongoose.model('Wallet', WalletSchema);
+

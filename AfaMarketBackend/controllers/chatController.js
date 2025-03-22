@@ -1,102 +1,98 @@
-const Chat = require('../models/Chat');
-const User = require('../models/User');
-const { sendNotification } = require('./notificationController');
+const Chat = require("../models/Chat");
+const User = require("../models/User");
+const Booking = require("../models/Booking"); // ✅ Added missing import
+const { sendNotification } = require("./notificationController");
+const asyncHandler = require("express-async-handler");
 
 // ✅ Send a message
-exports.sendMessage = async (req, res) => {
-  try {
-    const { receiverId, message } = req.body;
-    let fileUrl = null;
-    let fileType = null;
+exports.sendMessage = asyncHandler(async (req, res) => {
+  const { receiverId, message, bookingId } = req.body;
 
-    // Handle file uploads (audio/document)
-    if (req.file) {
-      fileUrl = req.file.path;
-      fileType = req.file.mimetype.startsWith("audio") ? "audio" : "document";
-    }
-
-    // Find or create chat
-    let chat = await Chat.findOne({
-      participants: { $all: [req.userId, receiverId] },
-    });
-
-    if (!chat) {
-      chat = new Chat({ participants: [req.userId, receiverId], messages: [] });
-    }
-
-    // Fetch sender details
-    const sender = await User.findById(req.userId).select('name profilePhoto');
-
-    // Create message object
-    const newMessage = {
-      sender: req.userId,
-      senderName: sender.name,
-      senderPhoto: sender.profilePhoto || null, // Include profile photo
-      message,
-      fileUrl,
-      fileType,
-      read: false,
-      timestamp: new Date(),
-    };
-
-    // Save message in chat
-    chat.messages.push(newMessage);
-    await chat.save();
-
-    // Emit real-time message event (if using Socket.IO)
-    req.io.to(receiverId).emit('newMessage', newMessage);
-
-    // Send notification
-    await sendNotification(receiverId, "chat", `${sender.name} sent you a message.`);
-
-    res.status(201).json({ message: "Message sent successfully", newMessage });
-  } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ message: "Server error", error: error.message });
+  if (!receiverId || !message.trim()) {
+    return res.status(400).json({ error: "Receiver ID and message are required." });
   }
-};
+
+  if (receiverId === req.userId) {
+    return res.status(400).json({ error: "You cannot send a message to yourself." });
+  }
+
+  let chat = await Chat.findOne({ participants: { $all: [req.userId, receiverId] } });
+
+  if (!chat) {
+    chat = new Chat({ participants: [req.userId, receiverId], messages: [] });
+  }
+
+  const sender = await User.findById(req.userId).select("name profilePhoto");
+
+  const newMessage = {
+    sender: req.userId,
+    senderName: sender.name,
+    senderPhoto: sender.profilePhoto || null,
+    message,
+    read: false,
+    timestamp: Date.now(),
+    bookingId: bookingId || null, // 🔥 Attach booking if available
+  };
+
+  chat.messages.push(newMessage);
+  await chat.save();
+
+  // Emit message event via Socket.IO
+  req.io.to(receiverId).emit("newMessage", newMessage);
+
+  // Send notification
+  await sendNotification(receiverId, "chat", `${sender.name} sent you a message.`);
+
+  res.status(201).json({ message: "Message sent successfully", newMessage });
+});
+
 
 // ✅ Get chat history
-exports.getChatHistory = async (req, res) => {
-  try {
-    const { userId, recipientId } = req.params;
+exports.getChatHistory = asyncHandler(async (req, res) => {
+  const { userId, recipientId } = req.params;
 
-    const chat = await Chat.findOne({
-      participants: { $all: [userId, recipientId] },
-    })
-      .populate('messages.sender', 'name profilePhoto') // Get sender details
-      .lean();
-
-    if (!chat) {
-      return res.status(200).json({ messages: [] });
-    }
-
-    res.status(200).json(chat.messages);
-  } catch (error) {
-    console.error('Error fetching chat history:', error);
-    res.status(500).json({ message: "Server error", error: error.message });
+  if (!userId || !recipientId) {
+    return res.status(400).json({ error: "User ID and Recipient ID are required." });
   }
-};
 
-// ✅ Mark messages as read
-exports.markAsRead = async (req, res) => {
-  try {
-    const { chatId, userId } = req.body;
+  const chat = await Chat.findOne({ participants: { $all: [userId, recipientId] } })
+    .select("messages")
+    .populate("messages.sender", "name profilePhoto")
+    .lean();
 
-    const chat = await Chat.findById(chatId);
-    if (!chat) return res.status(404).json({ error: 'Chat not found' });
+  // 🔥 Fetch latest booking status if any booking exists in chat
+  if (chat?.messages.some((msg) => msg.bookingId)) {
+    const bookingIds = [...new Set(chat.messages.map((msg) => msg.bookingId).filter(Boolean))];
+    const bookings = await Booking.find({ _id: { $in: bookingIds } });
 
-    // Mark only unread messages from the other user
     chat.messages.forEach((msg) => {
-      if (msg.sender.toString() !== userId && !msg.read) {
-        msg.read = true;
+      if (msg.bookingId) {
+        const booking = bookings.find((b) => b._id.toString() === msg.bookingId.toString());
+        if (booking) msg.bookingStatus = booking.status;
       }
     });
-
-    await chat.save();
-    res.status(200).json({ message: 'Messages marked as read' });
-  } catch (error) {
-    console.error('Error marking messages as read:', error);
-    res.status(500).json({ message: "Server error", error: error.message });
   }
-};
+
+  res.status(200).json(chat?.messages || []);
+});
+
+
+// ✅ Mark messages as read
+exports.markAsRead = asyncHandler(async (req, res) => {
+  const { chatId, userId } = req.body;
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) return res.status(404).json({ error: "Chat not found" });
+
+  let unreadCount = 0;
+  chat.messages.forEach((msg) => {
+    if (msg.sender.toString() !== userId && !msg.read) {
+      msg.read = true;
+      unreadCount++;
+    }
+  });
+
+  await chat.save();
+
+  res.status(200).json({ message: `Marked ${unreadCount} messages as read.` });
+});

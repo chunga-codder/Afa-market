@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator'); // Import express-val
 
 // Create a new escrow and transaction
 exports.createEscrowTransaction = async (req, res) => {
+  
   const { buyerId, sellerId, amount, escrowReference, buyerWallet } = req.body;
 
   if (!buyerId || !sellerId || !amount || !escrowReference || !buyerWallet) {
@@ -159,26 +160,26 @@ exports.resolveDispute = async (req, res) => {
   }
 };
 
-// Cancel an escrow
-exports.cancelEscrow = async (req, res) => {
-  const { escrowReference, cancelBy } = req.body;
+// // Cancel an escrow
+// exports.cancelEscrow = async (req, res) => {
+//   const { escrowReference, cancelBy } = req.body;
 
-  try {
-    const escrow = await Escrow.findOne({ escrowReference });
+//   try {
+//     const escrow = await Escrow.findOne({ escrowReference });
 
-    if (!escrow) {
-      return res.status(404).json({ message: 'Escrow not found' });
-    }
+//     if (!escrow) {
+//       return res.status(404).json({ message: 'Escrow not found' });
+//     }
 
-    // Cancel the escrow
-    await escrow.cancelEscrow(cancelBy);
+//     // Cancel the escrow
+//     await escrow.cancelEscrow(cancelBy);
 
-    res.status(200).json({
-      message: 'Escrow cancelled successfully',
-      escrow,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'An error occurred while canceling the escrow' });
-  }
-};
+//     res.status(200).json({
+//       message: 'Escrow cancelled successfully',
+//       escrow,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: 'An error occurred while canceling the escrow' });
+//   }
+// };
